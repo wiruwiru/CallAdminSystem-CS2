@@ -58,7 +58,7 @@ jobs:
       with:
         artifacts: "${{ env.PROJECT_NAME }}.zip"
         name: "CallAdminSystem v${{ env.BUILD_NUMBER }}"
-        tag: "build ${{ env.BUILD_NUMBER }}"
+        tag: "build-${{ env.BUILD_NUMBER }}"
         body: |
           Place the plugin in game/csgo/addons/counterstrikesharp/plugins/CallAdminSystem
           After first server start, config.json and reasons.txt be created
