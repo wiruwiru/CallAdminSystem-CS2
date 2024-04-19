@@ -17,7 +17,7 @@ public class CallAdminSystem : BasePlugin
 {
     public override string ModuleAuthor => "luca";
     public override string ModuleName => "CallAdminSystem";
-    public override string ModuleVersion => "v1.0.1";
+    public override string ModuleVersion => "v1.0.2";
 
     private Translator _translator;
     private Dictionary<string, DateTime> _lastCommandTimes = new Dictionary<string, DateTime>();
@@ -39,7 +39,7 @@ public class CallAdminSystem : BasePlugin
         
         RegisterListener<Listeners.OnClientConnected>(slot => _selectedReason[slot + 1] = new PersonTargetData{Target = -1, IsSelectedReason = false});
         RegisterListener<Listeners.OnClientDisconnectPost>(slot => _selectedReason[slot + 1] = null);
-        
+
         AddCommand("css_report", "", (controller, info) =>
         {
             if (controller == null) return;
@@ -53,14 +53,19 @@ public class CallAdminSystem : BasePlugin
                 return;
             }
 
-            //var reportMenu = new ChatMenu(_translator["SelectPlayerToReport"]); // JSON ERROR ON TRANSLATE CHATMENU
+            // var reportMenu = new ChatMenu(_translator["SelectPlayerToReport"]); // JSON ERROR ON TRANSLATE CHATMENU
             var reportMenu = new ChatMenu("Selecciona el jugador a reportar"); //Agregar _translator
             reportMenu.MenuOptions.Clear();
-            foreach (var player in Utilities.GetPlayers())
+
+            var players = Utilities.GetPlayers().Where(x => !x.IsBot && x.Connected == PlayerConnectedState.PlayerConnected);
+            foreach (var player in players)
             {
-                if(player.IsBot || player == controller) continue;
-                
-                reportMenu.AddMenuOption($"{player.PlayerName} [{player.Index}]", HandleMenu);
+                if (player == controller) continue;
+
+                var playerName = player.PlayerName;
+                playerName = playerName.Replace("[Ready]", "").Replace("[No Ready]", "").Trim();
+
+                reportMenu.AddMenuOption($"{playerName} [#{player.Index}]", HandleMenu);
             }
 
             _lastCommandTimes[playerId] = DateTime.Now;
@@ -81,20 +86,26 @@ public class CallAdminSystem : BasePlugin
                 return;
             }
 
-            //var reportMenu = new ChatMenu(_translator["SelectPlayerToReport"]); // JSON ERROR ON TRANSLATE CHATMENU
+            // var reportMenu = new ChatMenu(_translator["SelectPlayerToReport"]); // JSON ERROR ON TRANSLATE CHATMENU
             var reportMenu = new ChatMenu("Selecciona el jugador a reportar"); //Agregar _translator
             reportMenu.MenuOptions.Clear();
-            foreach (var player in Utilities.GetPlayers())
-            {
-                if (player.IsBot || player == controller) continue;
 
-                reportMenu.AddMenuOption($"{player.PlayerName} [{player.Index}]", HandleMenu);
+            var players = Utilities.GetPlayers().Where(x => !x.IsBot && x.Connected == PlayerConnectedState.PlayerConnected);
+            foreach (var player in players)
+            {
+                if (player == controller) continue;
+
+                var playerName = player.PlayerName;
+                playerName = playerName.Replace("[Ready]", "").Replace("[No Ready]", "").Trim();
+
+                reportMenu.AddMenuOption($"{playerName} [#{player.Index}]", HandleMenu);
             }
 
             _lastCommandTimes[playerId] = DateTime.Now;
 
             ChatMenus.OpenMenu(controller, reportMenu);
         });
+
 
         AddCommand("css_claim", "", (controller, info) =>
         {
@@ -356,7 +367,7 @@ public class CallAdminSystem : BasePlugin
         var config = new Config
         {
             WebhookUrl = "", // Debes crearlo en el canal donde enviaras los avisos.
-            IPandPORT = "45.235.99.18:27025", // Remplaza por la dirección IP de tu servidor.
+            IPandPORT = "45.235.99.18:27025", // Remplaza por la direcciï¿½n IP de tu servidor.
             CustomDomain = "https://crisisgamer.com/redirect/connect.php", // Si quieres usar tu propio dominio para rediregir las conexiones, debes remplazar esto.
             MentionRoleID = "", // Debes tener activado el modo desarrollador de discord, click derecho en el rol y copias su ID.
             CommandCooldownSeconds = 120 // Tiempo de enfriamiento para que el usuario pueda volver a usar el comando (en segundos)
