@@ -55,3 +55,4 @@ In the 'lang' folder, you'll find various files. For instance, 'es.json' is desi
 ## TO-DO
 - Change configuration file location
 - Add support for translations in ChatMenus titles
+- Add parameter to set the cooldown time for a user to report again

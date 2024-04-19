@@ -225,14 +225,14 @@ public class CallAdminSystem : BasePlugin
                             {
                                 name = _translator["Victim"],
                                 value =
-                                    $"**{_translator["Name"]}** {clientName}\n**SteamID:** {clientSteamId}\n**Steam:** {_translator["LinkToProfile"]}(https://steamcommunity.com/profiles/{clientSteamId}/)",
+                                    $"**{_translator["Name"]}** {clientName}\n**SteamID:** {clientSteamId}\n**Steam:** [{_translator["LinkToProfile"]}](https://steamcommunity.com/profiles/{targetSteamId}/)",
                                 inline = false
                             },
                             new
                             {
                                 name = _translator["Reported"],
                                 value =
-                                    $"**{_translator["Name"]}** {targetName}\n**SteamID:** {targetSteamId}\n**Steam:** {_translator["LinkToProfile"]}(https://steamcommunity.com/profiles/{targetSteamId}/)",
+                                    $"**{_translator["Name"]}** {targetName}\n**SteamID:** {targetSteamId}\n**Steam:** [{_translator["LinkToProfile"]}](https://steamcommunity.com/profiles/{targetSteamId}/)",
                                 inline = false
                             },
                             new
