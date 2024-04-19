@@ -1,0 +1,21 @@
+{
+  "Prefix": "[{BLUE}CALL{RED}ADMIN{WHITE}]",
+  "SelectPlayerToReport": "Select the player to report",
+  "NoPermissions": "You do not have the necessary permissions to use this command.",
+  "SendClaim": "You have notified other administrators that you are handling reports on this server.",
+  "SendReport": "You have reported a player {0}",
+  "SelectReasonToReport": "Select the reason for reporting",
+  "EmbedTitle": "Administrator in the server.",
+  "EmbedDescription": "An administrator is handling reports on this server.",
+  "Admin": "Administrator",
+  "DirectConnect": "Connection:",
+  "ClickToConnect": "[Click to join]",
+  "DiscordMention": "A {0} has been called to the server!",
+  "NewReport": "New report!",
+  "NewReportDescription": "There is a new report on the RETAKE server",
+  "Victim": "Victim",
+  "Reported": "Reported",
+  "Reason": "Reason",
+  "LinkToProfile": "link to profile",
+  "Name": "Name:"
+}

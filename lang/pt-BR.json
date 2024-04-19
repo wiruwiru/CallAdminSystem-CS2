@@ -1,0 +1,21 @@
+{
+  "Prefix": "[{BLUE}CALL{RED}ADMIN{WHITE}]",
+  "SelectPlayerToReport": "Selecione o jogador para reportar",
+  "NoPermissions": "Você não tem as permissões necessárias para usar este comando.",
+  "SendClaim": "Você notificou outros administradores que está lidando com relatórios neste servidor.",
+  "SendReport": "Você reportou um jogador {0}",
+  "SelectReasonToReport": "Selecione o motivo para o relatório",
+  "EmbedTitle": "Administrador no servidor.",
+  "EmbedDescription": "Um administrador está lidando com relatórios neste servidor.",
+  "Admin": "Administrador",
+  "DirectConnect": "Conexão:",
+  "ClickToConnect": "[Clique para entrar]",
+  "DiscordMention": "Um {0} foi chamado para o servidor!",
+  "NewReport": "Novo relatório!",
+  "NewReportDescription": "Há um novo relatório no servidor RETAKE",
+  "Victim": "Vítima",
+  "Reported": "Reportado",
+  "Reason": "Motivo",
+  "LinkToProfile": "link para perfil",
+  "Name": "Nome:"
+}
