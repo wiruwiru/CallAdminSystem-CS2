@@ -3,7 +3,7 @@ Allows players to report another user who is breaking the community rules, this 
 ## Installation
 1. Install [CounterStrike Sharp](https://github.com/roflmuffin/CounterStrikeSharp) and [Metamod:Source](https://www.sourcemm.net/downloads.php/?branch=master)
 
-2. Download CallAdminSystem.zip from the releases section.
+2. Download [CallAdminSystem.zip](https://github.com/wiruwiru/CallAdminSystem-CS2/releases) from the releases section.
 
 3. Unzip the archive and upload it to the game server
 
@@ -56,3 +56,6 @@ In the 'lang' folder, you'll find various files. For instance, 'es.json' is desi
 - Change configuration file location
 - Add support for translations in ChatMenus titles
 - Add parameter to set the cooldown time for a user to report again
+
+###
+This project is a modification of [ReportSystem](https://github.com/PhantomYopta/-Discord-cs2-ReportSystem)
