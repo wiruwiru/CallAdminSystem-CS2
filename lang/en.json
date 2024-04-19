@@ -1,5 +1,6 @@
 {
   "Prefix": "[{BLUE}CALL{RED}ADMIN{WHITE}]",
+  "CommandCooldownMessage": "{GOLD}You must wait {RED}{0} {GOLD}seconds before using this command again.",
   "SelectPlayerToReport": "Select the player to report",
   "NoPermissions": "You do not have the necessary permissions to use this command.",
   "SendClaim": "You have notified other administrators that you are handling reports on this server.",

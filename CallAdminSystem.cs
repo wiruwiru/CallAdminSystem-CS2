@@ -15,13 +15,15 @@ using Microsoft.Extensions.Localization;
 namespace CallAdminSystem;
 public class CallAdminSystem : BasePlugin
 {
-    private Translator _translator;
     public override string ModuleAuthor => "luca";
     public override string ModuleName => "CallAdminSystem";
-    public override string ModuleVersion => "v1.0.0";
+    public override string ModuleVersion => "v1.0.1";
 
+    private Translator _translator;
+    private Dictionary<string, DateTime> _lastCommandTimes = new Dictionary<string, DateTime>();
     private Config _config = null!;
-    private  PersonTargetData[] _selectedReason = new PersonTargetData[65];
+    private PersonTargetData[] _selectedReason = new PersonTargetData[65];
+
     public CallAdminSystem(IStringLocalizer localizer)
     {
         _translator = new Translator(localizer);
@@ -42,6 +44,15 @@ public class CallAdminSystem : BasePlugin
         {
             if (controller == null) return;
 
+            string playerId = controller.SteamID.ToString();
+
+            int secondsRemaining;
+            if (!CheckCommandCooldown(playerId, out secondsRemaining))
+            {
+                controller.PrintToChat(_translator["Prefix"] + " " + _translator["CommandCooldownMessage", secondsRemaining]);
+                return;
+            }
+
             //var reportMenu = new ChatMenu(_translator["SelectPlayerToReport"]); // JSON ERROR ON TRANSLATE CHATMENU
             var reportMenu = new ChatMenu("Selecciona el jugador a reportar"); //Agregar _translator
             reportMenu.MenuOptions.Clear();
@@ -51,13 +62,24 @@ public class CallAdminSystem : BasePlugin
                 
                 reportMenu.AddMenuOption($"{player.PlayerName} [{player.Index}]", HandleMenu);
             }
-            
+
+            _lastCommandTimes[playerId] = DateTime.Now;
+
             ChatMenus.OpenMenu(controller, reportMenu);
         });
 
         AddCommand("css_call", "", (controller, info) =>
         {
             if (controller == null) return;
+
+            string playerId = controller.SteamID.ToString();
+
+            int secondsRemaining;
+            if (!CheckCommandCooldown(playerId, out secondsRemaining))
+            {
+                controller.PrintToChat(_translator["Prefix"] + " " + _translator["CommandCooldownMessage", secondsRemaining]);
+                return;
+            }
 
             //var reportMenu = new ChatMenu(_translator["SelectPlayerToReport"]); // JSON ERROR ON TRANSLATE CHATMENU
             var reportMenu = new ChatMenu("Selecciona el jugador a reportar"); //Agregar _translator
@@ -68,6 +90,8 @@ public class CallAdminSystem : BasePlugin
 
                 reportMenu.AddMenuOption($"{player.PlayerName} [{player.Index}]", HandleMenu);
             }
+
+            _lastCommandTimes[playerId] = DateTime.Now;
 
             ChatMenus.OpenMenu(controller, reportMenu);
         });
@@ -94,6 +118,22 @@ public class CallAdminSystem : BasePlugin
         AddCommandListener("say_team", Listener_Say);
     }
 
+    private bool CheckCommandCooldown(string playerId, out int secondsRemaining)
+    {
+        if (_lastCommandTimes.TryGetValue(playerId, out DateTime lastCommandTime))
+        {
+            var secondsSinceLastCommand = (int)(DateTime.Now - lastCommandTime).TotalSeconds;
+            secondsRemaining = _config.CommandCooldownSeconds - secondsSinceLastCommand;
+            return secondsRemaining <= 0;
+        }
+        else
+        {
+            secondsRemaining = 0;
+            return true;
+        }
+    }
+
+
     [CommandHelper(whoCanExecute: CommandUsage.CLIENT_ONLY)]
     [RequiresPermissions("@css/generic")]
     public void ClaimCommand(CCSPlayerController? caller, CommandInfo command, string clientName)
@@ -116,7 +156,7 @@ public class CallAdminSystem : BasePlugin
             new
             {
                 name = _translator["DirectConnect"],
-                value = $"[**`connect {GetIP()}`**](https://crisisgamer.com/redirect/retakecs2.php?ip={GetIP()})  {_translator["ClickToConnect"]}",
+                value = $"[**`connect {GetIP()}`**]({GetCustomDomain()}?ip={GetIP()})  {_translator["ClickToConnect"]}",
                 inline = false
             }
         }
@@ -244,7 +284,7 @@ public class CallAdminSystem : BasePlugin
                             new
                             {
                                 name = _translator["DirectConnect"],
-                                value = $"[**`connect {GetIP()}`**](https://crisisgamer.com/redirect/retakecs2.php?ip={GetIP()})  {_translator["ClickToConnect"]}",
+                                value = $"[**`connect {GetIP()}`**]({GetCustomDomain()}?ip={GetIP()})  {_translator["ClickToConnect"]}",
                                 inline = false
                             }
                         }
@@ -316,8 +356,10 @@ public class CallAdminSystem : BasePlugin
         var config = new Config
         {
             WebhookUrl = "", // Debes crearlo en el canal donde enviaras los avisos.
-            IP = "45.235.99.18:27025", // Remplaza por la dirección IP de tu servidor.
+            IPandPORT = "45.235.99.18:27025", // Remplaza por la dirección IP de tu servidor.
+            CustomDomain = "https://crisisgamer.com/redirect/connect.php", // Si quieres usar tu propio dominio para rediregir las conexiones, debes remplazar esto.
             MentionRoleID = "", // Debes tener activado el modo desarrollador de discord, click derecho en el rol y copias su ID.
+            CommandCooldownSeconds = 120 // Tiempo de enfriamiento para que el usuario pueda volver a usar el comando (en segundos)
         };
 
         File.WriteAllText(configPath,
@@ -335,7 +377,11 @@ public class CallAdminSystem : BasePlugin
     }
     private string GetIP()
     {
-        return _config.IP;
+        return _config.IPandPORT;
+    }
+    private string GetCustomDomain()
+    {
+        return _config.CustomDomain;
     }
     private string MentionRoleID()
     {
@@ -358,8 +404,10 @@ public class CallAdminSystem : BasePlugin
 public class Config
 {
     public string WebhookUrl { get; set; } = "";
-    public string IP { get; set; } = "";
+    public string IPandPORT { get; set; } = "";
+    public string CustomDomain { get; set; } = "https://crisisgamer.com/redirect/connect.php";
     public string MentionRoleID { get; set; } = "";
+    public int CommandCooldownSeconds { get; set; } = 120;
 }
 
 public class PersonTargetData
