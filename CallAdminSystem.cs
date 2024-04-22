@@ -213,7 +213,7 @@ public class CallAdminSystem : BasePlugin
 
         foreach (var a in reason)
         {
-            reasonMenu.AddMenuOption($"{a}", HandleMenu2);
+            reasonMenu.AddMenuOption($"{a} [{index}]", HandleMenu2);
         }
             
         ChatMenus.OpenMenu(controller, reasonMenu);
