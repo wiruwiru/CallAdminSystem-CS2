@@ -53,8 +53,7 @@ public class CallAdminSystem : BasePlugin
                 return;
             }
 
-            // var reportMenu = new ChatMenu(_translator["SelectPlayerToReport"]); // JSON ERROR ON TRANSLATE CHATMENU
-            var reportMenu = new ChatMenu("Selecciona el jugador a reportar"); //Agregar _translator
+            var reportMenu = new ChatMenu(_translator["SelectPlayerToReport"]);
             reportMenu.MenuOptions.Clear();
 
             var players = Utilities.GetPlayers().Where(x => !x.IsBot && x.Connected == PlayerConnectedState.PlayerConnected);
@@ -86,8 +85,7 @@ public class CallAdminSystem : BasePlugin
                 return;
             }
 
-            // var reportMenu = new ChatMenu(_translator["SelectPlayerToReport"]); // JSON ERROR ON TRANSLATE CHATMENU
-            var reportMenu = new ChatMenu("Selecciona el jugador a reportar"); //Agregar _translator
+            var reportMenu = new ChatMenu(_translator["SelectPlayerToReport"]);
             reportMenu.MenuOptions.Clear();
 
             var players = Utilities.GetPlayers().Where(x => !x.IsBot && x.Connected == PlayerConnectedState.PlayerConnected);
@@ -210,8 +208,7 @@ public class CallAdminSystem : BasePlugin
         
         var index = int.Parse(numbersOnly.Trim());
         var reason = File.ReadAllLines(Path.Combine(ModuleDirectory, "reasons.txt"));
-        /*var reasonMenu = new ChatMenu(_translator["SelectReasonToReport"]);*/ // JSON ERROR ON TRANSLATE CHATMENU
-        var reasonMenu = new ChatMenu("Selecciona el motivo por el cual reportas"); //Agregar _translator
+        var reasonMenu = new ChatMenu(_translator["SelectReasonToReport"]);
         reasonMenu.MenuOptions.Clear();
 
         foreach (var a in reason)
