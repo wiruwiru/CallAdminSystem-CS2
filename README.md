@@ -42,7 +42,6 @@ Wallhack
 Multi-Hack
 Chat/Voice Spam
 Map Bug
-Other Reasons
 ```
 
 # Lang configuration
@@ -56,7 +55,7 @@ In the 'lang' folder, you'll find various files. For instance, 'es.json' is desi
 
 ## TO-DO
 - Change configuration file location
-- Add option for custom reason
+- Add the option to cancel the sending of a custom reason
 
 ###
 This project is a modification of [ReportSystem](https://github.com/PhantomYopta/-Discord-cs2-ReportSystem)

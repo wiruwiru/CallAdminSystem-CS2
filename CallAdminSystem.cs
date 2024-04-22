@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Text;
 using System.Text.Json;
 using CounterStrikeSharp.API;
@@ -17,7 +18,7 @@ public class CallAdminSystem : BasePlugin
 {
     public override string ModuleAuthor => "luca";
     public override string ModuleName => "CallAdminSystem";
-    public override string ModuleVersion => "v1.0.2";
+    public override string ModuleVersion => "v1.0.3";
 
     private Translator _translator;
     private Dictionary<string, DateTime> _lastCommandTimes = new Dictionary<string, DateTime>();
@@ -88,6 +89,11 @@ public class CallAdminSystem : BasePlugin
             var reportMenu = new ChatMenu(_translator["SelectPlayerToReport"]);
             reportMenu.MenuOptions.Clear();
 
+            // FOR DEVELOPER TEST
+            //string fakePlayerName = "luca.uy";
+            //string fakePlayerIndex = "0";
+            //reportMenu.AddMenuOption($"{fakePlayerName} [#{fakePlayerIndex}]", HandleMenu);
+
             var players = Utilities.GetPlayers().Where(x => !x.IsBot && x.Connected == PlayerConnectedState.PlayerConnected);
             foreach (var player in players)
             {
@@ -104,7 +110,6 @@ public class CallAdminSystem : BasePlugin
             ChatMenus.OpenMenu(controller, reportMenu);
         });
 
-
         AddCommand("css_claim", "", (controller, info) =>
         {
             if (controller == null) return;
@@ -116,12 +121,11 @@ public class CallAdminSystem : BasePlugin
                 controller.PrintToChat(_translator["Prefix"] + " " + _translator["NoPermissions"]);
                 return;
             }
-            
-            ClaimCommand(controller, info, controller?.PlayerName ?? "Desconocido");
+
+            ClaimCommand(controller, controller.PlayerName ?? "Desconocido");
 
             controller.PrintToChat(_translator["Prefix"] + " " + _translator["SendClaim"]);
         });
-
 
         AddCommandListener("say", Listener_Say);
         AddCommandListener("say_team", Listener_Say);
@@ -142,12 +146,12 @@ public class CallAdminSystem : BasePlugin
         }
     }
 
-
     [CommandHelper(whoCanExecute: CommandUsage.CLIENT_ONLY)]
     [RequiresPermissions("@css/generic")]
-    public void ClaimCommand(CCSPlayerController? caller, CommandInfo command, string clientName)
+    public void ClaimCommand(CCSPlayerController? caller, string clientName)
     {
         if (caller == null) return;
+        clientName = clientName.Replace("[Ready]", "").Replace("[No Ready]", "").Trim();
 
         var embed = new
         {
@@ -174,30 +178,45 @@ public class CallAdminSystem : BasePlugin
         Task.Run(() => SendEmbedToDiscord(embed));
     }
 
+    private ChatMenuOption? _selectedMenuOption;
+
     private HookResult Listener_Say(CCSPlayerController? player, CommandInfo commandinfo)
     {
         if (player == null) return HookResult.Continue;
 
-        if (_selectedReason[player.Index] != null && _selectedReason[player.Index]!.IsSelectedReason)
+        if (_selectedReason[player.Index] != null && _selectedReason[player.Index]!.IsSelectedReason && _selectedReason[player.Index]!.CustomReason && _selectedMenuOption != null)
         {
-            var msg = GetTextInsideQuotes(commandinfo.ArgString);
-            var target = Utilities.GetPlayerFromIndex(_selectedReason[player.Index]!.Target);
-            switch (msg)
-            {
-                case "cancel":
-                    _selectedReason[player.Index]!.IsSelectedReason = false;
-                    return HookResult.Handled;
-                default:
-                    string PlayerReportedName = target.PlayerName;
+            var msg = commandinfo.ArgString;
 
-                    Task.Run(() => SendMessageToDiscord(player.PlayerName, new SteamID(player.SteamID).SteamId2, target.PlayerName,
-                        new SteamID(target.SteamID).SteamId2, commandinfo.ArgString, $"{ConVar.Find("hostname")!.StringValue}\n{ConVar.Find("ip")!.StringValue}:{ConVar.Find("hostport")!.GetPrimitiveValue<int>()}"));
-                    _selectedReason[player.Index]!.IsSelectedReason = false;
-                    player.PrintToChat(_translator["Prefix"] + " " + _translator["SendReport", PlayerReportedName]);
-                    return HookResult.Handled;
-            }
+            var parts = _selectedMenuOption.Text.Split('[', ']');
+            var lastPart = parts[^2];
+            var numbersOnly = string.Join("", lastPart.Where(char.IsDigit));
+
+            var target = Utilities.GetPlayerFromIndex(int.Parse(numbersOnly.Trim()));
+            var playerName = player.PlayerName;
+            var playerSid = player.SteamID.ToString();
+            var targetName = target.PlayerName;
+            var targetSid = target.SteamID.ToString();
+            var ip = target.SteamID.ToString();
+
+            Task.Run(() => SendMessageToDiscord(playerName, playerSid, targetName, targetSid, msg));
+
+            string PlayerReportedName = target.PlayerName;
+
+            _selectedReason[player.Index]!.IsSelectedReason = false;
+            player.PrintToChat(_translator["Prefix"] + " " + _translator["SendReport", PlayerReportedName]);
+
+            return HookResult.Handled;
         }
+
         return HookResult.Continue;
+    }
+
+    private void HandleMenu2CustomReason(CCSPlayerController controller, ChatMenuOption option)
+    {
+        _selectedReason[controller.Index] = new PersonTargetData { IsSelectedReason = true, CustomReason = true };
+
+        controller.PrintToChat(_translator["Prefix"] + " " + _translator["WriteReason"]);        
     }
 
     private void HandleMenu(CCSPlayerController controller, ChatMenuOption option)
@@ -205,7 +224,9 @@ public class CallAdminSystem : BasePlugin
         var parts = option.Text.Split('[', ']');
         var lastPart = parts[^2];
         var numbersOnly = string.Join("", lastPart.Where(char.IsDigit));
-        
+
+        _selectedMenuOption = option;
+
         var index = int.Parse(numbersOnly.Trim());
         var reason = File.ReadAllLines(Path.Combine(ModuleDirectory, "reasons.txt"));
         var reasonMenu = new ChatMenu(_translator["SelectReasonToReport"]);
@@ -215,7 +236,9 @@ public class CallAdminSystem : BasePlugin
         {
             reasonMenu.AddMenuOption($"{a} [{index}]", HandleMenu2);
         }
-            
+
+        reasonMenu.AddMenuOption($"{_translator["CustomReason"]} [{index}]", HandleMenu2CustomReason);
+
         ChatMenus.OpenMenu(controller, reasonMenu);
     }
 
@@ -232,16 +255,16 @@ public class CallAdminSystem : BasePlugin
         var targetSid = target.SteamID.ToString();
         var ip = target.SteamID.ToString();
 
-        string PlayerReportedName = controller.PlayerName;
+        string PlayerReportedName = target.PlayerName;
 
         Task.Run(() => SendMessageToDiscord(playerName, playerSid, targetName,
-            targetSid, parts[0], ip));
+            targetSid, parts[0]));
         
         controller.PrintToChat(_translator["Prefix"] + " " + _translator["SendReport", PlayerReportedName]);
     }
 
     private async void SendMessageToDiscord(string clientName, string clientSteamId, string targetName,
-        string targetSteamId, string msg, string ip)
+        string targetSteamId, string msg)
     {
         try
         {
@@ -251,7 +274,11 @@ public class CallAdminSystem : BasePlugin
 
             var httpClient = new HttpClient();
 
-            if (msg == "") return;
+            if (string.IsNullOrEmpty(msg)) return;
+            clientName = clientName.Replace("[Ready]", "").Replace("[No Ready]", "").Trim();
+            targetName = targetName.Replace("[Ready]", "").Replace("[No Ready]", "").Trim();
+
+            msg = msg.Trim('"');
 
             string mentionRoleIDMessage = $"<@&{MentionRoleID()}>";
             string MentionMessage = _translator["DiscordMention", mentionRoleIDMessage];
@@ -273,7 +300,7 @@ public class CallAdminSystem : BasePlugin
                             {
                                 name = _translator["Victim"],
                                 value =
-                                    $"**{_translator["Name"]}** {clientName}\n**SteamID:** {clientSteamId}\n**Steam:** [{_translator["LinkToProfile"]}](https://steamcommunity.com/profiles/{targetSteamId}/)",
+                                    $"**{_translator["Name"]}** {clientName}\n**SteamID:** {clientSteamId}\n**Steam:** [{_translator["LinkToProfile"]}](https://steamcommunity.com/profiles/{clientSteamId}/)",
                                 inline = false
                             },
                             new
@@ -379,6 +406,7 @@ public class CallAdminSystem : BasePlugin
 
         return config;
     }
+
     private string GetWebhook()
     {
         return _config.WebhookUrl;
@@ -395,20 +423,8 @@ public class CallAdminSystem : BasePlugin
     {
         return _config.MentionRoleID;
     }
-
-    private string GetTextInsideQuotes(string input)
-    {
-        var startIndex = input.IndexOf('"');
-        var endIndex = input.LastIndexOf('"');
-
-        if (startIndex != -1 && endIndex != -1 && startIndex < endIndex)
-        {
-            return input.Substring(startIndex + 1, endIndex - startIndex - 1);
-        }
-
-        return string.Empty;
-    }
 }
+
 public class Config
 {
     public string WebhookUrl { get; set; } = "";
@@ -422,4 +438,5 @@ public class PersonTargetData
 {
     public int Target { get; set; }
     public bool IsSelectedReason { get; set; }
+    public bool CustomReason { get; set; }
 }
