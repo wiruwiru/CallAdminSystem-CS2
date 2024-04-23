@@ -93,6 +93,7 @@ public class CallAdminSystem : BasePlugin
             //string fakePlayerName = "luca.uy";
             //string fakePlayerIndex = "0";
             //reportMenu.AddMenuOption($"{fakePlayerName} [#{fakePlayerIndex}]", HandleMenu);
+            // END
 
             var players = Utilities.GetPlayers().Where(x => !x.IsBot && x.Connected == PlayerConnectedState.PlayerConnected);
             foreach (var player in players)
@@ -188,6 +189,12 @@ public class CallAdminSystem : BasePlugin
         {
             var msg = commandinfo.ArgString;
 
+            if (msg.ToLower().Contains("cancel"))
+            {
+                player.PrintToChat(_translator["Prefix"] + " " + _translator["SubmissionCanceled"]);
+                return HookResult.Handled;
+            }
+
             var parts = _selectedMenuOption.Text.Split('[', ']');
             var lastPart = parts[^2];
             var numbersOnly = string.Join("", lastPart.Where(char.IsDigit));
@@ -232,12 +239,12 @@ public class CallAdminSystem : BasePlugin
         var reasonMenu = new ChatMenu(_translator["SelectReasonToReport"]);
         reasonMenu.MenuOptions.Clear();
 
+        reasonMenu.AddMenuOption($"{_translator["CustomReason"]} [{index}]", HandleMenu2CustomReason);
+
         foreach (var a in reason)
         {
             reasonMenu.AddMenuOption($"{a} [{index}]", HandleMenu2);
         }
-
-        reasonMenu.AddMenuOption($"{_translator["CustomReason"]} [{index}]", HandleMenu2CustomReason);
 
         ChatMenus.OpenMenu(controller, reasonMenu);
     }

@@ -6,7 +6,7 @@
   "SendClaim": "You have notified other administrators that you are handling reports on this server.",
   "SendReport": "You have reported a player {0}",
   "CustomReason": "Custom reason",
-  "WriteReason": "Write your own reason for reporting the user.",
+  "WriteReason": "Write your own reason for denouncing the user or {RED}cancel {WHITE}to cancel.",
   "SubmissionCanceled": "Submission canceled.",
   "SelectReasonToReport": "Select the reason for reporting",
   "EmbedTitle": "Administrator in the server.",

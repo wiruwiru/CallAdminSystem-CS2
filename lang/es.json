@@ -6,7 +6,7 @@
   "SendClaim": "Has avisado a los demás administradores de que estas atendiendo reportes en este servidor.",
   "SendReport": "Has enviado un reporte sobre el jugador {0}",
   "CustomReason": "Otro motivo",
-  "WriteReason": "Escribe la razón de tu reporte.",
+  "WriteReason": "Escribe la razón de tu reporte o utiliza {RED}cancel {WHITE}para cancelar.",
   "SubmissionCanceled": "Se ha cancelado el reporte",
   "SelectReasonToReport": "Selecciona el motivo por el cual reportas",
   "EmbedTitle": "Administrador en el servidor.",
