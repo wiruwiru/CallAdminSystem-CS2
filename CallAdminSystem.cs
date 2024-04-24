@@ -18,7 +18,7 @@ public class CallAdminSystem : BasePlugin
 {
     public override string ModuleAuthor => "luca";
     public override string ModuleName => "CallAdminSystem";
-    public override string ModuleVersion => "v1.0.3";
+    public override string ModuleVersion => "v1.0.4";
 
     private Translator _translator;
     private Dictionary<string, DateTime> _lastCommandTimes = new Dictionary<string, DateTime>();
@@ -89,10 +89,13 @@ public class CallAdminSystem : BasePlugin
             var reportMenu = new ChatMenu(_translator["SelectPlayerToReport"]);
             reportMenu.MenuOptions.Clear();
 
-            // FOR DEVELOPER TEST
-            //string fakePlayerName = "luca.uy";
-            //string fakePlayerIndex = "0";
-            //reportMenu.AddMenuOption($"{fakePlayerName} [#{fakePlayerIndex}]", HandleMenu);
+            // FAKE USER FOR DEVELOPER TEST
+            if (_config.testMode)
+            {
+                string fakePlayerName = "luca.uy";
+                string fakePlayerIndex = "0";
+                reportMenu.AddMenuOption($"{fakePlayerName} [#{fakePlayerIndex}]", HandleMenu);
+            }
             // END
 
             var players = Utilities.GetPlayers().Where(x => !x.IsBot && x.Connected == PlayerConnectedState.PlayerConnected);
@@ -412,7 +415,8 @@ public class CallAdminSystem : BasePlugin
             IPandPORT = "45.235.99.18:27025", // Remplaza por la direcci�n IP de tu servidor.
             CustomDomain = "https://crisisgamer.com/redirect/connect.php", // Si quieres usar tu propio dominio para rediregir las conexiones, debes remplazar esto.
             MentionRoleID = "", // Debes tener activado el modo desarrollador de discord, click derecho en el rol y copias su ID.
-            CommandCooldownSeconds = 120 // Tiempo de enfriamiento para que el usuario pueda volver a usar el comando (en segundos)
+            CommandCooldownSeconds = 120, // Tiempo de enfriamiento para que el usuario pueda volver a usar el comando (en segundos).
+            testMode = false // Activar o desactivar el modo de testeo (activa un jugador falso para poder hacer pruebas).
         };
 
         File.WriteAllText(configPath,
@@ -450,6 +454,7 @@ public class Config
     public string CustomDomain { get; set; } = "https://crisisgamer.com/redirect/connect.php";
     public string MentionRoleID { get; set; } = "";
     public int CommandCooldownSeconds { get; set; } = 120;
+    public bool testMode { get; set; } = false;
 }
 
 public class PersonTargetData
