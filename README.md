@@ -26,7 +26,7 @@ Allows players to report another user who is breaking the community rules, this 
 ## Configuration example
 ```
 {
-  WebhookUrl = "https://discord.com/api/webhooks/xxxxx/xxxxxxxxx,
+  "WebhookUrl": "https://discord.com/api/webhooks/xxxxx/xxxxxxxxx,
   "IPandPORT": "45.235.99.18:27025",
   "CustomDomain": "https://crisisgamer.com/redirect/connect.php",
   "MentionRoleID": "1111767358881681519",
