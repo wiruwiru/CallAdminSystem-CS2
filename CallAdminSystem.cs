@@ -192,6 +192,7 @@ public class CallAdminSystem : BasePlugin
             if (msg.ToLower().Contains("cancel"))
             {
                 player.PrintToChat(_translator["Prefix"] + " " + _translator["SubmissionCanceled"]);
+                _selectedReason[player.Index]!.IsSelectedReason = false;
                 return HookResult.Handled;
             }
 
@@ -223,8 +224,18 @@ public class CallAdminSystem : BasePlugin
     {
         _selectedReason[controller.Index] = new PersonTargetData { IsSelectedReason = true, CustomReason = true };
 
-        controller.PrintToChat(_translator["Prefix"] + " " + _translator["WriteReason"]);        
+        controller.PrintToChat(_translator["Prefix"] + " " + _translator["WriteReason"]);
+
+        AddTimer(20.0f, () =>
+        {
+            if (_selectedReason[controller.Index] != null && _selectedReason[controller.Index]!.IsSelectedReason && _selectedReason[controller.Index]!.CustomReason)
+            {
+                controller.PrintToChat(_translator["Prefix"] + " " + _translator["SubmissionCanceled"]);
+                _selectedReason[controller.Index]!.IsSelectedReason = false;
+            }
+        });
     }
+
 
     private void HandleMenu(CCSPlayerController controller, ChatMenuOption option)
     {
