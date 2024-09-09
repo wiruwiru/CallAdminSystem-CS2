@@ -18,7 +18,7 @@ public class CallAdminSystem : BasePlugin
 {
     public override string ModuleAuthor => "luca";
     public override string ModuleName => "CallAdminSystem";
-    public override string ModuleVersion => "v1.0.4";
+    public override string ModuleVersion => "v1.0.5";
 
     private Translator _translator;
     private Dictionary<string, DateTime> _lastCommandTimes = new Dictionary<string, DateTime>();
@@ -69,8 +69,7 @@ public class CallAdminSystem : BasePlugin
             }
 
             _lastCommandTimes[playerId] = DateTime.Now;
-
-            ChatMenus.OpenMenu(controller, reportMenu);
+            MenuManager.OpenChatMenu(controller, reportMenu);
         });
 
         AddCommand("css_call", "", (controller, info) =>
@@ -110,8 +109,7 @@ public class CallAdminSystem : BasePlugin
             }
 
             _lastCommandTimes[playerId] = DateTime.Now;
-
-            ChatMenus.OpenMenu(controller, reportMenu);
+            MenuManager.OpenChatMenu(controller, reportMenu);
         });
 
         AddCommand("css_claim", "", (controller, info) =>
@@ -259,8 +257,7 @@ public class CallAdminSystem : BasePlugin
         {
             reasonMenu.AddMenuOption($"{a} [{index}]", HandleMenu2);
         }
-
-        ChatMenus.OpenMenu(controller, reasonMenu);
+        MenuManager.OpenChatMenu(controller, reasonMenu);
     }
 
     private void HandleMenu2(CCSPlayerController controller, ChatMenuOption option)
