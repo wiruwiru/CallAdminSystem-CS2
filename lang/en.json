@@ -21,5 +21,6 @@
   "Reported": "Reported",
   "Reason": "Reason",
   "LinkToProfile": "link to profile",
-  "Name": "Name:"
+  "Name": "Name:",
+  "InsufficientPlayers": "Not enough players to use this command."
 }

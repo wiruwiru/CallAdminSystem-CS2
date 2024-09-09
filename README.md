@@ -18,9 +18,10 @@ Allows players to report another user who is breaking the community rules, this 
 | :------- | :------- | :------- |
 | `WebhookUrl` | You must create it in the channel where you will send the notices. |**YES** |
 | `IPandPORT` | Replace with the IP address of your server. |**YES** |
-| `CustomDomain` | You can replace it with your domain if you want, the connect.php file is available in the main branch  |**YES** |
+| `CustomDomain` | You can replace it with your domain if you want, the connect.php file is available in the main branch.  |**YES** |
 | `MentionRoleID` | You must have the discord developer mode activated, right click on the role and copy its ID. |**YES** |
-| `CommandCooldownSeconds` | Cooling down time for the user to be able to use the command again (in seconds) |**YES** |
+| `CommandCooldownSeconds` | Cooling down time for the user to be able to use the command again (in seconds). |**YES** |
+| `MinimumPlayers` | Minimum players that must be connected to be able to use the command. |**YES** |
 | `testMode` | Activate or deactivate the test mode (activate a fake player to be able to test). |**YES** |
 
 ## Configuration example
@@ -31,6 +32,7 @@ Allows players to report another user who is breaking the community rules, this 
   "CustomDomain": "https://crisisgamer.com/redirect/connect.php",
   "MentionRoleID": "1111767358881681519",
   "CommandCooldownSeconds": 60,
+  "MinimumPlayers": 2,
   "testMode": false
 }
 ```

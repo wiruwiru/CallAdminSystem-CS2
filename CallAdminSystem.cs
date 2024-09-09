@@ -33,17 +33,25 @@ public class CallAdminSystem : BasePlugin
     public override void Load(bool hotReload)
     {
         _config = LoadConfig();
-        
+
         var mapsFilePath = Path.Combine(ModuleDirectory, "reasons.txt");
         if (!File.Exists(mapsFilePath))
             File.WriteAllText(mapsFilePath, "");
-        
-        RegisterListener<Listeners.OnClientConnected>(slot => _selectedReason[slot + 1] = new PersonTargetData{Target = -1, IsSelectedReason = false});
+
+        RegisterListener<Listeners.OnClientConnected>(slot => _selectedReason[slot + 1] = new PersonTargetData { Target = -1, IsSelectedReason = false });
         RegisterListener<Listeners.OnClientDisconnectPost>(slot => _selectedReason[slot + 1] = null);
 
         AddCommand("css_report", "", (controller, info) =>
         {
             if (controller == null) return;
+
+            var players = Utilities.GetPlayers().Where(x => !x.IsBot && x.Connected == PlayerConnectedState.PlayerConnected);
+
+            if (players.Count() < _config.MinimumPlayers)
+            {
+                controller.PrintToChat(_translator["Prefix"] + " " + _translator["InsufficientPlayers"]);
+                return;
+            }
 
             string playerId = controller.SteamID.ToString();
 
@@ -57,7 +65,6 @@ public class CallAdminSystem : BasePlugin
             var reportMenu = new ChatMenu(_translator["SelectPlayerToReport"]);
             reportMenu.MenuOptions.Clear();
 
-            var players = Utilities.GetPlayers().Where(x => !x.IsBot && x.Connected == PlayerConnectedState.PlayerConnected);
             foreach (var player in players)
             {
                 if (player == controller) continue;
@@ -75,6 +82,14 @@ public class CallAdminSystem : BasePlugin
         AddCommand("css_call", "", (controller, info) =>
         {
             if (controller == null) return;
+
+            var players = Utilities.GetPlayers().Where(x => !x.IsBot && x.Connected == PlayerConnectedState.PlayerConnected);
+            
+            if (players.Count() < _config.MinimumPlayers)
+            {
+                controller.PrintToChat(_translator["Prefix"] + " " + _translator["InsufficientPlayers"]);
+                return;
+            }
 
             string playerId = controller.SteamID.ToString();
 
@@ -97,7 +112,7 @@ public class CallAdminSystem : BasePlugin
             }
             // END
 
-            var players = Utilities.GetPlayers().Where(x => !x.IsBot && x.Connected == PlayerConnectedState.PlayerConnected);
+
             foreach (var player in players)
             {
                 if (player == controller) continue;
@@ -265,7 +280,7 @@ public class CallAdminSystem : BasePlugin
         var parts = option.Text.Split('[', ']');
         var lastPart = parts[^2];
         var numbersOnly = string.Join("", lastPart.Where(char.IsDigit));
-        
+
         var target = Utilities.GetPlayerFromIndex(int.Parse(numbersOnly.Trim()));
         var playerName = controller.PlayerName;
         var playerSid = controller.SteamID.ToString();
@@ -277,7 +292,7 @@ public class CallAdminSystem : BasePlugin
 
         Task.Run(() => SendMessageToDiscord(playerName, playerSid, targetName,
             targetSid, parts[0]));
-        
+
         controller.PrintToChat(_translator["Prefix"] + " " + _translator["SendReport", PlayerReportedName]);
     }
 
@@ -359,7 +374,7 @@ public class CallAdminSystem : BasePlugin
             Console.WriteLine(e);
             throw;
         }
-        
+
     }
 
     private async Task SendEmbedToDiscord(object embed)
@@ -413,6 +428,7 @@ public class CallAdminSystem : BasePlugin
             CustomDomain = "https://crisisgamer.com/redirect/connect.php", // Si quieres usar tu propio dominio para rediregir las conexiones, debes remplazar esto.
             MentionRoleID = "", // Debes tener activado el modo desarrollador de discord, click derecho en el rol y copias su ID.
             CommandCooldownSeconds = 120, // Tiempo de enfriamiento para que el usuario pueda volver a usar el comando (en segundos).
+            MinimumPlayers = 2, // Jugadores minimos que deben estar conectados para poder usar el comando.
             testMode = false // Activar o desactivar el modo de testeo (activa un jugador falso para poder hacer pruebas).
         };
 
@@ -451,6 +467,7 @@ public class Config
     public string CustomDomain { get; set; } = "https://crisisgamer.com/redirect/connect.php";
     public string MentionRoleID { get; set; } = "";
     public int CommandCooldownSeconds { get; set; } = 120;
+    public int MinimumPlayers { get; set; } = 2;
     public bool testMode { get; set; } = false;
 }
 
