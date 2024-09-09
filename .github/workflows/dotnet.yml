@@ -27,6 +27,10 @@ jobs:
       run: dotnet restore
     - name: Build
       run: dotnet build ${{ env.PROJECT_PATH }} -c WeaponPaints -o ${{ env.OUTPUT_PATH }}
+    - name: Check Output Directory
+      run: |
+        ls -al ${{ env.OUTPUT_PATH }}
+        pwd
 
   publish:
     if: github.event_name == 'push'
@@ -38,6 +42,14 @@ jobs:
       uses: actions/setup-dotnet@v3
       with:
         dotnet-version: 8.0.x
+    - name: Verify Output Path Exists
+      run: |
+        if [ -d "${{ env.OUTPUT_PATH }}" ]; then
+          echo "Output directory exists"
+        else
+          echo "Output directory does not exist"
+          exit 1
+        fi
     - name: Zip with Lang Directory
       run: |
         cd ${{ env.OUTPUT_PATH }}
