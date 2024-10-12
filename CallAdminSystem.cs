@@ -18,7 +18,7 @@ public class CallAdminSystem : BasePlugin
 {
     public override string ModuleAuthor => "luca";
     public override string ModuleName => "CallAdminSystem";
-    public override string ModuleVersion => "v1.0.5";
+    public override string ModuleVersion => "v1.0.6";
 
     private Translator _translator;
     private Dictionary<string, DateTime> _lastCommandTimes = new Dictionary<string, DateTime>();
@@ -102,16 +102,6 @@ public class CallAdminSystem : BasePlugin
 
             var reportMenu = new ChatMenu(_translator["SelectPlayerToReport"]);
             reportMenu.MenuOptions.Clear();
-
-            // FAKE USER FOR DEVELOPER TEST
-            if (_config.testMode)
-            {
-                string fakePlayerName = "luca.uy";
-                string fakePlayerIndex = "0";
-                reportMenu.AddMenuOption($"{fakePlayerName} [#{fakePlayerIndex}]", HandleMenu);
-            }
-            // END
-
 
             foreach (var player in players)
             {
@@ -428,8 +418,7 @@ public class CallAdminSystem : BasePlugin
             CustomDomain = "https://crisisgamer.com/redirect/connect.php", // Si quieres usar tu propio dominio para rediregir las conexiones, debes remplazar esto.
             MentionRoleID = "", // Debes tener activado el modo desarrollador de discord, click derecho en el rol y copias su ID.
             CommandCooldownSeconds = 120, // Tiempo de enfriamiento para que el usuario pueda volver a usar el comando (en segundos).
-            MinimumPlayers = 2, // Jugadores minimos que deben estar conectados para poder usar el comando.
-            testMode = false // Activar o desactivar el modo de testeo (activa un jugador falso para poder hacer pruebas).
+            MinimumPlayers = 2 // Jugadores minimos que deben estar conectados para poder usar el comando.
         };
 
         File.WriteAllText(configPath,
@@ -468,7 +457,7 @@ public class Config
     public string MentionRoleID { get; set; } = "";
     public int CommandCooldownSeconds { get; set; } = 120;
     public int MinimumPlayers { get; set; } = 2;
-    public bool testMode { get; set; } = false;
+
 }
 
 public class PersonTargetData

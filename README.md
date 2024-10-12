@@ -25,7 +25,6 @@ https://github.com/user-attachments/assets/fd49799b-bc89-4d4d-8b9a-627670620c80
 | `MentionRoleID` | You must have the discord developer mode activated, right click on the role and copy its ID. |**YES** |
 | `CommandCooldownSeconds` | Cooling down time for the user to be able to use the command again (in seconds). |**YES** |
 | `MinimumPlayers` | Minimum players that must be connected to be able to use the command. |**YES** |
-| `testMode` | Activate or deactivate the test mode (activate a fake player to be able to test). |**YES** |
 
 ## Configuration example
 ```
@@ -35,8 +34,7 @@ https://github.com/user-attachments/assets/fd49799b-bc89-4d4d-8b9a-627670620c80
   "CustomDomain": "https://crisisgamer.com/redirect/connect.php",
   "MentionRoleID": "1111767358881681519",
   "CommandCooldownSeconds": 60,
-  "MinimumPlayers": 2,
-  "testMode": false
+  "MinimumPlayers": 2
 }
 ```
 
