@@ -9,7 +9,7 @@ on:
 env:
   BUILD_NUMBER: ${{ github.run_number }}
   PROJECT_PATH: "CallAdminSystem.csproj"
-  PROJECT_NAME: "CallAdminSystem-CS2"
+  PROJECT_NAME: "CallAdminSystem"
   OUTPUT_PATH: "./CallAdminSystem"
 
 jobs:
@@ -45,16 +45,15 @@ jobs:
       run: dotnet build ${{ env.PROJECT_PATH }} -c WeaponPaints -o ${{ env.OUTPUT_PATH }}
     - name: Zip
       run: |
-        mkdir -p ./Release/CallAdminSystem
-        cp -r ${{ env.OUTPUT_PATH }}/* ./Release/CallAdminSystem/
-        cd Release
-        zip -r ../${{ env.PROJECT_NAME }}.zip CallAdminSystem
+        cd ${{ env.OUTPUT_PATH }}
+        zip -r ../${{ env.PROJECT_NAME }}.zip .
         cd ..
         if [ -d "./lang" ]; then
           zip -ur ./${{ env.PROJECT_NAME }}.zip ./lang
         else
           echo "The 'lang' directory does not exist."
           exit 1
+        fi
     - name: CallAdminSystem
       uses: ncipollo/release-action@v1.12.0
       with:
@@ -63,4 +62,4 @@ jobs:
         tag: "build-${{ env.BUILD_NUMBER }}"
         body: |
           Place the plugin in game/csgo/addons/counterstrikesharp/plugins/CallAdminSystem
-          After first server start, config.json and reasons.txt will be created
+          After first server start, config.json and reasons.txt be created
