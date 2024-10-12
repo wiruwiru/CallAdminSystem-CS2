@@ -51,17 +51,15 @@ jobs:
         zip -r ../${{ env.PROJECT_NAME }}.zip CallAdminSystem
         cd ..
         if [ -d "./lang" ]; then
-          # Agregar la carpeta 'lang' al zip
           zip -ur ./${{ env.PROJECT_NAME }}.zip ./lang
         else
           echo "The 'lang' directory does not exist."
           exit 1
-        fi
     - name: CallAdminSystem
       uses: ncipollo/release-action@v1.12.0
       with:
         artifacts: "${{ env.PROJECT_NAME }}.zip"
-        name: "CallAdminSystem v${{ env.BUILD_NUMBER }}"`
+        name: "CallAdminSystem v${{ env.BUILD_NUMBER }}"
         tag: "build-${{ env.BUILD_NUMBER }}"
         body: |
           Place the plugin in game/csgo/addons/counterstrikesharp/plugins/CallAdminSystem
