@@ -1,29 +1,55 @@
-using System.ComponentModel;
 using System.Text;
 using System.Text.Json;
 using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
-using CounterStrikeSharp.API.Core.Attributes.Registration;
 using CounterStrikeSharp.API.Modules.Admin;
 using CounterStrikeSharp.API.Modules.Commands;
-using CounterStrikeSharp.API.Modules.Commands.Targeting;
-using CounterStrikeSharp.API.Modules.Cvars;
-using CounterStrikeSharp.API.Modules.Entities;
 using CounterStrikeSharp.API.Modules.Menu;
-using CounterStrikeSharp.API.Modules.Utils;
 using Microsoft.Extensions.Localization;
+using System.Text.Json.Serialization;
 
 namespace CallAdminSystem;
-public class CallAdminSystem : BasePlugin
+
+public class BaseConfigs : BasePluginConfig
 {
-    public override string ModuleAuthor => "luca";
+    [JsonPropertyName("WebhookUrl")]
+    public string WebhookUrl { get; set; } = "";
+
+    [JsonPropertyName("IPandPORT")]
+    public string IPandPORT { get; set; } = "45.235.99.18:27025";
+
+    [JsonPropertyName("CustomDomain")]
+    public string CustomDomain { get; set; } = "https://crisisgamer.com/redirect/connect.php";
+
+    [JsonPropertyName("MentionRoleID")]
+    public string MentionRoleID { get; set; } = "";
+
+    [JsonPropertyName("ReportCommand")]
+    public List<string> ReportCommands { get; set; } = new List<string> { "css_call", "css_report" };
+
+    [JsonPropertyName("ClaimCommand")]
+    public string ClaimCommand { get; set; } = "css_claim";
+
+    [JsonPropertyName("ClaimCommandFlag")]
+    public string ClaimCommandFlag { get; set; } = "@css/generic";
+
+    [JsonPropertyName("CommandCooldownSeconds")]
+    public int CommandCooldownSeconds { get; set; } = 120;
+
+    [JsonPropertyName("MinimumPlayers")]
+    public int MinimumPlayers { get; set; } = 2;
+}
+
+public class CallAdminSystem : BasePlugin, IPluginConfig<BaseConfigs>
+{
+    public override string ModuleAuthor => "luca.uy";
     public override string ModuleName => "CallAdminSystem";
-    public override string ModuleVersion => "v1.0.6";
+    public override string ModuleVersion => "v1.0.7";
+    public override string ModuleDescription => "Allows players to report another user who is breaking the community rules, this report is sent as an embed message to Discord so that administrators can respond.";
 
     private Translator _translator;
     private Dictionary<string, DateTime> _lastCommandTimes = new Dictionary<string, DateTime>();
-    private Config _config = null!;
-    private PersonTargetData[] _selectedReason = new PersonTargetData[65];
+    private PersonTargetData?[] _selectedReason = new PersonTargetData?[65];
 
     public CallAdminSystem(IStringLocalizer localizer)
     {
@@ -32,8 +58,6 @@ public class CallAdminSystem : BasePlugin
 
     public override void Load(bool hotReload)
     {
-        _config = LoadConfig();
-
         var mapsFilePath = Path.Combine(ModuleDirectory, "reasons.txt");
         if (!File.Exists(mapsFilePath))
             File.WriteAllText(mapsFilePath, "");
@@ -41,95 +65,60 @@ public class CallAdminSystem : BasePlugin
         RegisterListener<Listeners.OnClientConnected>(slot => _selectedReason[slot + 1] = new PersonTargetData { Target = -1, IsSelectedReason = false });
         RegisterListener<Listeners.OnClientDisconnectPost>(slot => _selectedReason[slot + 1] = null);
 
-        AddCommand("css_report", "", (controller, info) =>
+        foreach (var command in Config.ReportCommands)
+        {
+            AddCommand(command, "", (controller, info) =>
+            {
+                if (controller == null) return;
+
+                var players = Utilities.GetPlayers().Where(x => !x.IsBot && x.Connected == PlayerConnectedState.PlayerConnected);
+
+                if (players.Count() < Config.MinimumPlayers)
+                {
+                    controller.PrintToChat(_translator["Prefix"] + " " + _translator["InsufficientPlayers"]);
+                    return;
+                }
+
+                string playerId = controller.SteamID.ToString();
+
+                int secondsRemaining;
+                if (!CheckCommandCooldown(playerId, out secondsRemaining))
+                {
+                    controller.PrintToChat(_translator["Prefix"] + " " + _translator["CommandCooldownMessage", secondsRemaining]);
+                    return;
+                }
+
+                var reportMenu = new ChatMenu(_translator["SelectPlayerToReport"]);
+                reportMenu.MenuOptions.Clear();
+
+                foreach (var player in players)
+                {
+                    if (player == controller) continue;
+
+                    var playerName = player.PlayerName;
+                    playerName = playerName.Replace("[Ready]", "").Replace("[No Ready]", "").Trim();
+
+                    reportMenu.AddMenuOption($"{playerName} [#{player.Index}]", HandleMenu);
+                }
+
+                _lastCommandTimes[playerId] = DateTime.Now;
+                MenuManager.OpenChatMenu(controller, reportMenu);
+            });
+        }
+
+        AddCommand(Config.ClaimCommand, "", (controller, info) =>
         {
             if (controller == null) return;
 
-            var players = Utilities.GetPlayers().Where(x => !x.IsBot && x.Connected == PlayerConnectedState.PlayerConnected);
-
-            if (players.Count() < _config.MinimumPlayers)
-            {
-                controller.PrintToChat(_translator["Prefix"] + " " + _translator["InsufficientPlayers"]);
-                return;
-            }
-
-            string playerId = controller.SteamID.ToString();
-
-            int secondsRemaining;
-            if (!CheckCommandCooldown(playerId, out secondsRemaining))
-            {
-                controller.PrintToChat(_translator["Prefix"] + " " + _translator["CommandCooldownMessage", secondsRemaining]);
-                return;
-            }
-
-            var reportMenu = new ChatMenu(_translator["SelectPlayerToReport"]);
-            reportMenu.MenuOptions.Clear();
-
-            foreach (var player in players)
-            {
-                if (player == controller) continue;
-
-                var playerName = player.PlayerName;
-                playerName = playerName.Replace("[Ready]", "").Replace("[No Ready]", "").Trim();
-
-                reportMenu.AddMenuOption($"{playerName} [#{player.Index}]", HandleMenu);
-            }
-
-            _lastCommandTimes[playerId] = DateTime.Now;
-            MenuManager.OpenChatMenu(controller, reportMenu);
-        });
-
-        AddCommand("css_call", "", (controller, info) =>
-        {
-            if (controller == null) return;
-
-            var players = Utilities.GetPlayers().Where(x => !x.IsBot && x.Connected == PlayerConnectedState.PlayerConnected);
-            
-            if (players.Count() < _config.MinimumPlayers)
-            {
-                controller.PrintToChat(_translator["Prefix"] + " " + _translator["InsufficientPlayers"]);
-                return;
-            }
-
-            string playerId = controller.SteamID.ToString();
-
-            int secondsRemaining;
-            if (!CheckCommandCooldown(playerId, out secondsRemaining))
-            {
-                controller.PrintToChat(_translator["Prefix"] + " " + _translator["CommandCooldownMessage", secondsRemaining]);
-                return;
-            }
-
-            var reportMenu = new ChatMenu(_translator["SelectPlayerToReport"]);
-            reportMenu.MenuOptions.Clear();
-
-            foreach (var player in players)
-            {
-                if (player == controller) continue;
-
-                var playerName = player.PlayerName;
-                playerName = playerName.Replace("[Ready]", "").Replace("[No Ready]", "").Trim();
-
-                reportMenu.AddMenuOption($"{playerName} [#{player.Index}]", HandleMenu);
-            }
-
-            _lastCommandTimes[playerId] = DateTime.Now;
-            MenuManager.OpenChatMenu(controller, reportMenu);
-        });
-
-        AddCommand("css_claim", "", (controller, info) =>
-        {
-            if (controller == null) return;
-
-            var validador = new RequiresPermissions("@css/generic");
-            validador.Command = "css_claim";
+            var validador = new RequiresPermissions(Config.ClaimCommandFlag);
+            validador.Command = Config.ClaimCommand;
             if (!validador.CanExecuteCommand(controller))
             {
                 controller.PrintToChat(_translator["Prefix"] + " " + _translator["NoPermissions"]);
                 return;
             }
 
-            ClaimCommand(controller, controller.PlayerName ?? "Desconocido");
+            ClaimCommand(controller, controller.PlayerName ?? _translator["UnknownPlayer"]);
 
             controller.PrintToChat(_translator["Prefix"] + " " + _translator["SendClaim"]);
         });
@@ -138,12 +127,19 @@ public class CallAdminSystem : BasePlugin
         AddCommandListener("say_team", Listener_Say);
     }
 
+    public required BaseConfigs Config { get; set; }
+
+    public void OnConfigParsed(BaseConfigs config)
+    {
+        Config = config;
+    }
+
     private bool CheckCommandCooldown(string playerId, out int secondsRemaining)
     {
         if (_lastCommandTimes.TryGetValue(playerId, out DateTime lastCommandTime))
         {
             var secondsSinceLastCommand = (int)(DateTime.Now - lastCommandTime).TotalSeconds;
-            secondsRemaining = _config.CommandCooldownSeconds - secondsSinceLastCommand;
+            secondsRemaining = Config.CommandCooldownSeconds - secondsSinceLastCommand;
             return secondsRemaining <= 0;
         }
         else
@@ -272,6 +268,11 @@ public class CallAdminSystem : BasePlugin
         var numbersOnly = string.Join("", lastPart.Where(char.IsDigit));
 
         var target = Utilities.GetPlayerFromIndex(int.Parse(numbersOnly.Trim()));
+        if (target == null)
+        {
+            controller.PrintToChat(_translator["Prefix"] + " " + _translator["PlayerNotFound"]);
+            return;
+        }
         var playerName = controller.PlayerName;
         var playerSid = controller.SteamID.ToString();
         var targetName = target.PlayerName;
@@ -398,66 +399,22 @@ public class CallAdminSystem : BasePlugin
         }
     }
 
-    private Config LoadConfig()
-    {
-        var configPath = Path.Combine(ModuleDirectory, "config.json");
-
-        if (!File.Exists(configPath)) return CreateConfig(configPath);
-
-        var config = JsonSerializer.Deserialize<Config>(File.ReadAllText(configPath))!;
-
-        return config;
-    }
-
-    private Config CreateConfig(string configPath)
-    {
-        var config = new Config
-        {
-            WebhookUrl = "", // Debes crearlo en el canal donde enviaras los avisos.
-            IPandPORT = "45.235.99.18:27025", // Remplaza por la direcci�n IP de tu servidor.
-            CustomDomain = "https://crisisgamer.com/redirect/connect.php", // Si quieres usar tu propio dominio para rediregir las conexiones, debes remplazar esto.
-            MentionRoleID = "", // Debes tener activado el modo desarrollador de discord, click derecho en el rol y copias su ID.
-            CommandCooldownSeconds = 120, // Tiempo de enfriamiento para que el usuario pueda volver a usar el comando (en segundos).
-            MinimumPlayers = 2 // Jugadores minimos que deben estar conectados para poder usar el comando.
-        };
-
-        File.WriteAllText(configPath,
-            JsonSerializer.Serialize(config, new JsonSerializerOptions { WriteIndented = true }));
-
-        Console.ForegroundColor = ConsoleColor.DarkGreen;
-        Console.WriteLine("[CallAdminSystem] The configuration was successfully saved to a file: " + configPath);
-        Console.ResetColor();
-
-        return config;
-    }
-
     private string GetWebhook()
     {
-        return _config.WebhookUrl;
+        return Config.WebhookUrl;
     }
     private string GetIP()
     {
-        return _config.IPandPORT;
+        return Config.IPandPORT;
     }
     private string GetCustomDomain()
     {
-        return _config.CustomDomain;
+        return Config.CustomDomain;
     }
     private string MentionRoleID()
     {
-        return _config.MentionRoleID;
+        return Config.MentionRoleID;
     }
-}
-
-public class Config
-{
-    public string WebhookUrl { get; set; } = "";
-    public string IPandPORT { get; set; } = "";
-    public string CustomDomain { get; set; } = "https://crisisgamer.com/redirect/connect.php";
-    public string MentionRoleID { get; set; } = "";
-    public int CommandCooldownSeconds { get; set; } = 120;
-    public int MinimumPlayers { get; set; } = 2;
-
 }
 
 public class PersonTargetData

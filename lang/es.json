@@ -22,5 +22,6 @@
   "Reason": "Motivo",
   "LinkToProfile": "link al perfil",
   "Name": "Nombre:",
-  "InsufficientPlayers": "No hay suficientes jugadores para utilizar este comando."
+  "InsufficientPlayers": "No hay suficientes jugadores para utilizar este comando.",
+  "UnknownPlayer": "Desconocido"
 }

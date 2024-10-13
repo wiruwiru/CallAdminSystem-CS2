@@ -23,6 +23,9 @@ https://github.com/user-attachments/assets/fd49799b-bc89-4d4d-8b9a-627670620c80
 | `IPandPORT` | Replace with the IP address of your server. |**YES** |
 | `CustomDomain` | You can replace it with your domain if you want, the connect.php file is available in the main branch.  |**YES** |
 | `MentionRoleID` | You must have the discord developer mode activated, right click on the role and copy its ID. |**YES** |
+| `ReportCommand` | Sets the command with which players can report other users. |**YES** |
+| `ClaimCommand` | Sets the command with which administrators can claim reports from that server. |**YES** |
+| `ClaimCommandFlag` | Sets the permission that is needed to use the claim command |**YES** |
 | `CommandCooldownSeconds` | Cooling down time for the user to be able to use the command again (in seconds). |**YES** |
 | `MinimumPlayers` | Minimum players that must be connected to be able to use the command. |**YES** |
 
@@ -33,8 +36,12 @@ https://github.com/user-attachments/assets/fd49799b-bc89-4d4d-8b9a-627670620c80
   "IPandPORT": "45.235.99.18:27025",
   "CustomDomain": "https://crisisgamer.com/redirect/connect.php",
   "MentionRoleID": "1111767358881681519",
+  "ReportCommand": [ "css_call", "css_report" ],
+  "ClaimCommand": "css_claim",
+  "ClaimCommandFlag": "@css/generic",
   "CommandCooldownSeconds": 60,
-  "MinimumPlayers": 2
+  "MinimumPlayers": 2,
+  "ConfigVersion": 1
 }
 ```
 
@@ -58,10 +65,12 @@ In the 'lang' folder, you'll find various files. For instance, 'es.json' is desi
 # Commands
 `!report` `!call`  - Report a player command.
 
-`!claim`  - Command to take reports on the server. | You need to have the @css/generic permission to use it.
+`!claim`  - Command to take reports on the server. | You need to have the default @css/generic permission to be able to use the command.
 
 ## TO-DO
-- Change configuration file location
+- [x] Change configuration file location
+- [ ] Move the reasons to configuration
+- Any recommendations to help improve the plugin
 
 ###
 This project is a modification of [ReportSystem](https://github.com/PhantomYopta/-Discord-cs2-ReportSystem)
