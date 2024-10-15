@@ -28,6 +28,8 @@ https://github.com/user-attachments/assets/fd49799b-bc89-4d4d-8b9a-627670620c80
 | `ClaimCommandFlag` | Sets the permission that is needed to use the claim command |**YES** |
 | `CommandCooldownSeconds` | Cooling down time for the user to be able to use the command again (in seconds). |**YES** |
 | `MinimumPlayers` | Minimum players that must be connected to be able to use the command. |**YES** |
+| `ReportEmbedColor` | Configure the color of the embed, you must set a hex color. Example: #eb4034 |**YES** |
+| `ClaimEmbedColor` | Configure the color of the embed, you must set a hex color. Example: #100c85 |**YES** |
 
 ## Configuration example
 ```
@@ -41,6 +43,8 @@ https://github.com/user-attachments/assets/fd49799b-bc89-4d4d-8b9a-627670620c80
   "ClaimCommandFlag": "@css/generic",
   "CommandCooldownSeconds": 60,
   "MinimumPlayers": 2,
+  "ReportEmbedColor": "#eb4034",
+  "ClaimEmbedColor": "#100c85",
   "ConfigVersion": 1
 }
 ```
