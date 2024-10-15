@@ -38,13 +38,19 @@ public class BaseConfigs : BasePluginConfig
 
     [JsonPropertyName("MinimumPlayers")]
     public int MinimumPlayers { get; set; } = 2;
+
+    [JsonPropertyName("ReportEmbedColor")]
+    public string ReportEmbedColor { get; set; } = "#eb4034";
+
+    [JsonPropertyName("ClaimEmbedColor")]
+    public string ClaimEmbedColor { get; set; } = "#100c85";
 }
 
 public class CallAdminSystem : BasePlugin, IPluginConfig<BaseConfigs>
 {
     public override string ModuleAuthor => "luca.uy";
     public override string ModuleName => "CallAdminSystem";
-    public override string ModuleVersion => "v1.0.7";
+    public override string ModuleVersion => "v1.0.8";
     public override string ModuleDescription => "Allows players to report another user who is breaking the community rules, this report is sent as an embed message to Discord so that administrators can respond.";
 
     private Translator _translator;
@@ -149,6 +155,15 @@ public class CallAdminSystem : BasePlugin, IPluginConfig<BaseConfigs>
         }
     }
 
+    private int ConvertHexToColor(string hex)
+    {
+        if (hex.StartsWith("#"))
+        {
+            hex = hex[1..];
+        }
+        return int.Parse(hex, System.Globalization.NumberStyles.HexNumber);
+    }
+
     [CommandHelper(whoCanExecute: CommandUsage.CLIENT_ONLY)]
     [RequiresPermissions("@css/generic")]
     public void ClaimCommand(CCSPlayerController? caller, string clientName)
@@ -160,7 +175,7 @@ public class CallAdminSystem : BasePlugin, IPluginConfig<BaseConfigs>
         {
             title = _translator["EmbedTitle"],
             description = _translator["EmbedDescription"],
-            color = 3093237,
+            color = ConvertHexToColor(Config.ClaimEmbedColor),
             fields = new[]
         {
             new
@@ -317,7 +332,7 @@ public class CallAdminSystem : BasePlugin, IPluginConfig<BaseConfigs>
                     {
                         title = _translator["NewReport"],
                         description = _translator["NewReportDescription"],
-                        color = 16711680,
+                        color = ConvertHexToColor(Config.ReportEmbedColor),
                         fields = new[]
                         {
                             new
