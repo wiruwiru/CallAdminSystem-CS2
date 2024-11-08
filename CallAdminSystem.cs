@@ -2,11 +2,12 @@ using System.Text;
 using System.Text.Json;
 using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
-using CounterStrikeSharp.API.Modules.Admin;
-using CounterStrikeSharp.API.Modules.Commands;
-using CounterStrikeSharp.API.Modules.Menu;
-using Microsoft.Extensions.Localization;
 using System.Text.Json.Serialization;
+using Microsoft.Extensions.Localization;
+using CounterStrikeSharp.API.Modules.Commands;
+using CounterStrikeSharp.API.Modules.Cvars;
+using CounterStrikeSharp.API.Modules.Admin;
+using CounterStrikeSharp.API.Modules.Menu;
 
 namespace CallAdminSystem;
 
@@ -17,6 +18,12 @@ public class BaseConfigs : BasePluginConfig
 
     [JsonPropertyName("IPandPORT")]
     public string IPandPORT { get; set; } = "45.235.99.18:27025";
+
+    [JsonPropertyName("GetIPandPORTautomatic")]
+    public bool GetIPandPORTautomatic { get; set; } = true;
+
+    [JsonPropertyName("UseHostname")]
+    public bool UseHostname { get; set; } = true;
 
     [JsonPropertyName("CustomDomain")]
     public string CustomDomain { get; set; } = "https://crisisgamer.com/redirect/connect.php";
@@ -49,12 +56,17 @@ public class BaseConfigs : BasePluginConfig
 public class CallAdminSystem : BasePlugin, IPluginConfig<BaseConfigs>
 {
     public override string ModuleAuthor => "luca.uy";
+    public override string ModuleVersion => "v1.0.9";
     public override string ModuleName => "CallAdminSystem";
-    public override string ModuleVersion => "v1.0.8";
     public override string ModuleDescription => "Allows players to report another user who is breaking the community rules, this report is sent as an embed message to Discord so that administrators can respond.";
 
     private Translator _translator;
+
     private Dictionary<string, DateTime> _lastCommandTimes = new Dictionary<string, DateTime>();
+
+    private string? cachedIPandPort;
+    private string? _hostname;
+
     private PersonTargetData?[] _selectedReason = new PersonTargetData?[65];
 
     public CallAdminSystem(IStringLocalizer localizer)
@@ -131,8 +143,21 @@ public class CallAdminSystem : BasePlugin, IPluginConfig<BaseConfigs>
 
         AddCommandListener("say", Listener_Say);
         AddCommandListener("say_team", Listener_Say);
-    }
 
+        if (Config.GetIPandPORTautomatic)
+        {
+            string? ip = ConVar.Find("ip")?.StringValue;
+            string? port = ConVar.Find("hostport")?.GetPrimitiveValue<int>().ToString();
+
+            cachedIPandPort = !string.IsNullOrEmpty(ip) && !string.IsNullOrEmpty(port) ? $"{ip}:{port}" : Config.IPandPORT;
+        }
+        else
+        {
+            cachedIPandPort = Config.IPandPORT;
+        }
+
+        _hostname = Config.UseHostname ? (ConVar.Find("hostname")?.StringValue ?? _translator["NewReport"]) : _translator["NewReport"];
+    }
     public required BaseConfigs Config { get; set; }
 
     public void OnConfigParsed(BaseConfigs config)
@@ -173,7 +198,8 @@ public class CallAdminSystem : BasePlugin, IPluginConfig<BaseConfigs>
 
         var embed = new
         {
-            title = _translator["EmbedTitle"],
+            // title = _translator["EmbedTitle"],
+            title = _hostname,
             description = _translator["EmbedDescription"],
             color = ConvertHexToColor(Config.ClaimEmbedColor),
             fields = new[]
@@ -187,7 +213,7 @@ public class CallAdminSystem : BasePlugin, IPluginConfig<BaseConfigs>
             new
             {
                 name = _translator["DirectConnect"],
-                value = $"[**`connect {GetIP()}`**]({GetCustomDomain()}?ip={GetIP()})  {_translator["ClickToConnect"]}",
+                value = $"[**`connect {cachedIPandPort}`**]({GetCustomDomain()}?ip={cachedIPandPort})  {_translator["ClickToConnect"]}",
                 inline = false
             }
         }
@@ -296,14 +322,12 @@ public class CallAdminSystem : BasePlugin, IPluginConfig<BaseConfigs>
 
         string PlayerReportedName = target.PlayerName;
 
-        Task.Run(() => SendMessageToDiscord(playerName, playerSid, targetName,
-            targetSid, parts[0]));
+        Task.Run(() => SendMessageToDiscord(playerName, playerSid, targetName, targetSid, parts[0]));
 
         controller.PrintToChat(_translator["Prefix"] + " " + _translator["SendReport", PlayerReportedName]);
     }
 
-    private async void SendMessageToDiscord(string clientName, string clientSteamId, string targetName,
-        string targetSteamId, string msg)
+    private async void SendMessageToDiscord(string clientName, string clientSteamId, string targetName, string targetSteamId, string msg)
     {
         try
         {
@@ -330,7 +354,8 @@ public class CallAdminSystem : BasePlugin, IPluginConfig<BaseConfigs>
                 {
                     new
                     {
-                        title = _translator["NewReport"],
+                        // title = _translator["NewReport"],
+                        title = _hostname,
                         description = _translator["NewReportDescription"],
                         color = ConvertHexToColor(Config.ReportEmbedColor),
                         fields = new[]
@@ -358,7 +383,7 @@ public class CallAdminSystem : BasePlugin, IPluginConfig<BaseConfigs>
                             new
                             {
                                 name = _translator["DirectConnect"],
-                                value = $"[**`connect {GetIP()}`**]({GetCustomDomain()}?ip={GetIP()})  {_translator["ClickToConnect"]}",
+                                value = $"[**`connect {cachedIPandPort}`**]({GetCustomDomain()}?ip={cachedIPandPort})  {_translator["ClickToConnect"]}",
                                 inline = false
                             }
                         }
@@ -371,9 +396,7 @@ public class CallAdminSystem : BasePlugin, IPluginConfig<BaseConfigs>
             var response = await httpClient.PostAsync(webhookUrl, content);
 
             Console.ForegroundColor = response.IsSuccessStatusCode ? ConsoleColor.Green : ConsoleColor.Red;
-            Console.WriteLine(response.IsSuccessStatusCode
-                ? "Success"
-                : $"Error: {response.StatusCode}");
+            Console.WriteLine(response.IsSuccessStatusCode ? "Success" : $"Error: {response.StatusCode}");
         }
         catch (Exception e)
         {
@@ -403,9 +426,7 @@ public class CallAdminSystem : BasePlugin, IPluginConfig<BaseConfigs>
             var response = await httpClient.PostAsync(webhookUrl, content);
 
             Console.ForegroundColor = response.IsSuccessStatusCode ? ConsoleColor.Green : ConsoleColor.Red;
-            Console.WriteLine(response.IsSuccessStatusCode
-                ? "Success"
-                : $"Error: {response.StatusCode}");
+            Console.WriteLine(response.IsSuccessStatusCode ? "Success" : $"Error: {response.StatusCode}");
         }
         catch (Exception e)
         {
@@ -417,10 +438,6 @@ public class CallAdminSystem : BasePlugin, IPluginConfig<BaseConfigs>
     private string GetWebhook()
     {
         return Config.WebhookUrl;
-    }
-    private string GetIP()
-    {
-        return Config.IPandPORT;
     }
     private string GetCustomDomain()
     {

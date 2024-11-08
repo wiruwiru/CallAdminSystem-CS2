@@ -21,6 +21,8 @@ https://github.com/user-attachments/assets/fd49799b-bc89-4d4d-8b9a-627670620c80
 | :------- | :------- | :------- |
 | `WebhookUrl` | You must create it in the channel where you will send the notices. |**YES** |
 | `IPandPORT` | Replace with the IP address of your server. |**YES** |
+| `GetIPandPORTautomatic` | When you activate this option the plugin will try to get the IP:PORT of your server automatically, in case it is not possible use the IPandPORT configuration. | **YES** |
+| `UseHostname` | If you set this configuration to true, the “EmbedTitle” of the translation will be replaced by the hostname you have configured in your server.cfg file. | **YES** |
 | `CustomDomain` | You can replace it with your domain if you want, the connect.php file is available in the main branch.  |**YES** |
 | `MentionRoleID` | You must have the discord developer mode activated, right click on the role and copy its ID. |**YES** |
 | `ReportCommand` | Sets the command with which players can report other users. |**YES** |
@@ -36,6 +38,8 @@ https://github.com/user-attachments/assets/fd49799b-bc89-4d4d-8b9a-627670620c80
 {
   "WebhookUrl": "https://discord.com/api/webhooks/xxxxx/xxxxxxxxx,
   "IPandPORT": "45.235.99.18:27025",
+  "GetIPandPORTautomatic": true,
+  "UseHostname": true,
   "CustomDomain": "https://crisisgamer.com/redirect/connect.php",
   "MentionRoleID": "1111767358881681519",
   "ReportCommand": [ "css_call", "css_report" ],
