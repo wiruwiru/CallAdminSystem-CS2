@@ -26,7 +26,7 @@ public class BaseConfigs : BasePluginConfig
     public bool UseHostname { get; set; } = true;
 
     [JsonPropertyName("CustomDomain")]
-    public string CustomDomain { get; set; } = "https://crisisgamer.com/redirect/connect.php";
+    public string CustomDomain { get; set; } = "https://crisisgamer.com/connect";
 
     [JsonPropertyName("MentionRoleID")]
     public string MentionRoleID { get; set; } = "";
