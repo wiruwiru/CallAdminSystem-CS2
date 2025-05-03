@@ -2,8 +2,6 @@ using System.Text;
 using System.Text.Json;
 using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
-using System.Text.Json.Serialization;
-using Microsoft.Extensions.Localization;
 using CounterStrikeSharp.API.Modules.Commands;
 using CounterStrikeSharp.API.Modules.Cvars;
 using CounterStrikeSharp.API.Modules.Admin;
@@ -11,68 +9,17 @@ using CounterStrikeSharp.API.Modules.Menu;
 
 namespace CallAdminSystem;
 
-public class BaseConfigs : BasePluginConfig
-{
-    [JsonPropertyName("WebhookUrl")]
-    public string WebhookUrl { get; set; } = "";
-
-    [JsonPropertyName("IPandPORT")]
-    public string IPandPORT { get; set; } = "45.235.99.18:27025";
-
-    [JsonPropertyName("GetIPandPORTautomatic")]
-    public bool GetIPandPORTautomatic { get; set; } = true;
-
-    [JsonPropertyName("UseHostname")]
-    public bool UseHostname { get; set; } = true;
-
-    [JsonPropertyName("CustomDomain")]
-    public string CustomDomain { get; set; } = "https://crisisgamer.com/connect";
-
-    [JsonPropertyName("MentionRoleID")]
-    public string MentionRoleID { get; set; } = "";
-
-    [JsonPropertyName("ReportCommand")]
-    public List<string> ReportCommands { get; set; } = new List<string> { "css_call", "css_report" };
-
-    [JsonPropertyName("ClaimCommand")]
-    public string ClaimCommand { get; set; } = "css_claim";
-
-    [JsonPropertyName("ClaimCommandFlag")]
-    public string ClaimCommandFlag { get; set; } = "@css/generic";
-
-    [JsonPropertyName("CommandCooldownSeconds")]
-    public int CommandCooldownSeconds { get; set; } = 120;
-
-    [JsonPropertyName("MinimumPlayers")]
-    public int MinimumPlayers { get; set; } = 2;
-
-    [JsonPropertyName("ReportEmbedColor")]
-    public string ReportEmbedColor { get; set; } = "#eb4034";
-
-    [JsonPropertyName("ClaimEmbedColor")]
-    public string ClaimEmbedColor { get; set; } = "#100c85";
-}
-
 public class CallAdminSystem : BasePlugin, IPluginConfig<BaseConfigs>
 {
     public override string ModuleAuthor => "luca.uy";
-    public override string ModuleVersion => "v1.0.9";
+    public override string ModuleVersion => "v1.1.0";
     public override string ModuleName => "CallAdminSystem";
     public override string ModuleDescription => "Allows players to report another user who is breaking the community rules, this report is sent as an embed message to Discord so that administrators can respond.";
 
-    private Translator _translator;
-
     private Dictionary<string, DateTime> _lastCommandTimes = new Dictionary<string, DateTime>();
-
     private string? cachedIPandPort;
     private string? _hostname;
-
     private PersonTargetData?[] _selectedReason = new PersonTargetData?[65];
-
-    public CallAdminSystem(IStringLocalizer localizer)
-    {
-        _translator = new Translator(localizer);
-    }
 
     public override void Load(bool hotReload)
     {
@@ -93,7 +40,7 @@ public class CallAdminSystem : BasePlugin, IPluginConfig<BaseConfigs>
 
                 if (players.Count() < Config.MinimumPlayers)
                 {
-                    controller.PrintToChat(_translator["Prefix"] + " " + _translator["InsufficientPlayers"]);
+                    controller.PrintToChat(Localizer["Prefix"] + " " + Localizer["InsufficientPlayers"]);
                     return;
                 }
 
@@ -102,11 +49,11 @@ public class CallAdminSystem : BasePlugin, IPluginConfig<BaseConfigs>
                 int secondsRemaining;
                 if (!CheckCommandCooldown(playerId, out secondsRemaining))
                 {
-                    controller.PrintToChat(_translator["Prefix"] + " " + _translator["CommandCooldownMessage", secondsRemaining]);
+                    controller.PrintToChat(Localizer["Prefix"] + " " + Localizer["CommandCooldownMessage", secondsRemaining]);
                     return;
                 }
 
-                var reportMenu = new ChatMenu(_translator["SelectPlayerToReport"]);
+                var reportMenu = new ChatMenu(Localizer["SelectPlayerToReport"]);
                 reportMenu.MenuOptions.Clear();
 
                 foreach (var player in players)
@@ -132,13 +79,13 @@ public class CallAdminSystem : BasePlugin, IPluginConfig<BaseConfigs>
             validador.Command = Config.ClaimCommand;
             if (!validador.CanExecuteCommand(controller))
             {
-                controller.PrintToChat(_translator["Prefix"] + " " + _translator["NoPermissions"]);
+                controller.PrintToChat(Localizer["Prefix"] + " " + Localizer["NoPermissions"]);
                 return;
             }
 
-            ClaimCommand(controller, controller.PlayerName ?? _translator["UnknownPlayer"]);
+            ClaimCommand(controller, controller.PlayerName ?? Localizer["UnknownPlayer"]);
 
-            controller.PrintToChat(_translator["Prefix"] + " " + _translator["SendClaim"]);
+            controller.PrintToChat(Localizer["Prefix"] + " " + Localizer["SendClaim"]);
         });
 
         AddCommandListener("say", Listener_Say);
@@ -156,7 +103,7 @@ public class CallAdminSystem : BasePlugin, IPluginConfig<BaseConfigs>
             cachedIPandPort = Config.IPandPORT;
         }
 
-        _hostname = Config.UseHostname ? (ConVar.Find("hostname")?.StringValue ?? _translator["NewReport"]) : _translator["NewReport"];
+        _hostname = Config.UseHostname ? (ConVar.Find("hostname")?.StringValue ?? Localizer["NewReport"]) : Localizer["NewReport"];
     }
     public required BaseConfigs Config { get; set; }
 
@@ -198,22 +145,22 @@ public class CallAdminSystem : BasePlugin, IPluginConfig<BaseConfigs>
 
         var embed = new
         {
-            // title = _translator["EmbedTitle"],
+            // title = Localizer["EmbedTitle"],
             title = _hostname,
-            description = _translator["EmbedDescription"],
+            description = Localizer["EmbedDescription"],
             color = ConvertHexToColor(Config.ClaimEmbedColor),
             fields = new[]
         {
             new
             {
-                name = _translator["Admin"],
+                name = Localizer["Admin"],
                 value = $"{clientName}",
                 inline = false
             },
             new
             {
-                name = _translator["DirectConnect"],
-                value = $"[**`connect {cachedIPandPort}`**]({GetCustomDomain()}?ip={cachedIPandPort})  {_translator["ClickToConnect"]}",
+                name = Localizer["DirectConnect"],
+                value = $"[**`connect {cachedIPandPort}`**]({GetCustomDomain()}?ip={cachedIPandPort})  {Localizer["ClickToConnect"]}",
                 inline = false
             }
         }
@@ -234,7 +181,7 @@ public class CallAdminSystem : BasePlugin, IPluginConfig<BaseConfigs>
 
             if (msg.ToLower().Contains("cancel"))
             {
-                player.PrintToChat(_translator["Prefix"] + " " + _translator["SubmissionCanceled"]);
+                player.PrintToChat(Localizer["Prefix"] + " " + Localizer["SubmissionCanceled"]);
                 _selectedReason[player.Index]!.IsSelectedReason = false;
                 return HookResult.Handled;
             }
@@ -255,7 +202,7 @@ public class CallAdminSystem : BasePlugin, IPluginConfig<BaseConfigs>
             string PlayerReportedName = target.PlayerName;
 
             _selectedReason[player.Index]!.IsSelectedReason = false;
-            player.PrintToChat(_translator["Prefix"] + " " + _translator["SendReport", PlayerReportedName]);
+            player.PrintToChat(Localizer["Prefix"] + " " + Localizer["SendReport", PlayerReportedName]);
 
             return HookResult.Handled;
         }
@@ -267,13 +214,13 @@ public class CallAdminSystem : BasePlugin, IPluginConfig<BaseConfigs>
     {
         _selectedReason[controller.Index] = new PersonTargetData { IsSelectedReason = true, CustomReason = true };
 
-        controller.PrintToChat(_translator["Prefix"] + " " + _translator["WriteReason"]);
+        controller.PrintToChat(Localizer["Prefix"] + " " + Localizer["WriteReason"]);
 
         AddTimer(20.0f, () =>
         {
             if (_selectedReason[controller.Index] != null && _selectedReason[controller.Index]!.IsSelectedReason && _selectedReason[controller.Index]!.CustomReason)
             {
-                controller.PrintToChat(_translator["Prefix"] + " " + _translator["SubmissionCanceled"]);
+                controller.PrintToChat(Localizer["Prefix"] + " " + Localizer["SubmissionCanceled"]);
                 _selectedReason[controller.Index]!.IsSelectedReason = false;
             }
         });
@@ -290,10 +237,10 @@ public class CallAdminSystem : BasePlugin, IPluginConfig<BaseConfigs>
 
         var index = int.Parse(numbersOnly.Trim());
         var reason = File.ReadAllLines(Path.Combine(ModuleDirectory, "reasons.txt"));
-        var reasonMenu = new ChatMenu(_translator["SelectReasonToReport"]);
+        var reasonMenu = new ChatMenu(Localizer["SelectReasonToReport"]);
         reasonMenu.MenuOptions.Clear();
 
-        reasonMenu.AddMenuOption($"{_translator["CustomReason"]} [{index}]", HandleMenu2CustomReason);
+        reasonMenu.AddMenuOption($"{Localizer["CustomReason"]} [{index}]", HandleMenu2CustomReason);
 
         foreach (var a in reason)
         {
@@ -311,7 +258,7 @@ public class CallAdminSystem : BasePlugin, IPluginConfig<BaseConfigs>
         var target = Utilities.GetPlayerFromIndex(int.Parse(numbersOnly.Trim()));
         if (target == null)
         {
-            controller.PrintToChat(_translator["Prefix"] + " " + _translator["PlayerNotFound"]);
+            controller.PrintToChat(Localizer["Prefix"] + " " + Localizer["PlayerNotFound"]);
             return;
         }
         var playerName = controller.PlayerName;
@@ -324,7 +271,7 @@ public class CallAdminSystem : BasePlugin, IPluginConfig<BaseConfigs>
 
         Task.Run(() => SendMessageToDiscord(playerName, playerSid, targetName, targetSid, parts[0]));
 
-        controller.PrintToChat(_translator["Prefix"] + " " + _translator["SendReport", PlayerReportedName]);
+        controller.PrintToChat(Localizer["Prefix"] + " " + Localizer["SendReport", PlayerReportedName]);
     }
 
     private async void SendMessageToDiscord(string clientName, string clientSteamId, string targetName, string targetSteamId, string msg)
@@ -344,7 +291,7 @@ public class CallAdminSystem : BasePlugin, IPluginConfig<BaseConfigs>
             msg = msg.Trim('"');
 
             string mentionRoleIDMessage = $"<@&{MentionRoleID()}>";
-            string MentionMessage = _translator["DiscordMention", mentionRoleIDMessage];
+            string MentionMessage = Localizer["DiscordMention", mentionRoleIDMessage];
 
             var payload = new
             {
@@ -354,36 +301,36 @@ public class CallAdminSystem : BasePlugin, IPluginConfig<BaseConfigs>
                 {
                     new
                     {
-                        // title = _translator["NewReport"],
+                        // title = Localizer["NewReport"],
                         title = _hostname,
-                        description = _translator["NewReportDescription"],
+                        description = Localizer["NewReportDescription"],
                         color = ConvertHexToColor(Config.ReportEmbedColor),
                         fields = new[]
                         {
                             new
                             {
-                                name = _translator["Victim"],
+                                name = Localizer["Victim"],
                                 value =
-                                    $"**{_translator["Name"]}** {clientName}\n**SteamID:** {clientSteamId}\n**Steam:** [{_translator["LinkToProfile"]}](https://steamcommunity.com/profiles/{clientSteamId}/)",
+                                    $"**{Localizer["Name"]}** {clientName}\n**SteamID:** {clientSteamId}\n**Steam:** [{Localizer["LinkToProfile"]}](https://steamcommunity.com/profiles/{clientSteamId}/)",
                                 inline = false
                             },
                             new
                             {
-                                name = _translator["Reported"],
+                                name = Localizer["Reported"],
                                 value =
-                                    $"**{_translator["Name"]}** {targetName}\n**SteamID:** {targetSteamId}\n**Steam:** [{_translator["LinkToProfile"]}](https://steamcommunity.com/profiles/{targetSteamId}/)",
+                                    $"**{Localizer["Name"]}** {targetName}\n**SteamID:** {targetSteamId}\n**Steam:** [{Localizer["LinkToProfile"]}](https://steamcommunity.com/profiles/{targetSteamId}/)",
                                 inline = false
                             },
                             new
                             {
-                                name = _translator["Reason"],
+                                name = Localizer["Reason"],
                                 value = msg,
                                 inline = false
                             },
                             new
                             {
-                                name = _translator["DirectConnect"],
-                                value = $"[**`connect {cachedIPandPort}`**]({GetCustomDomain()}?ip={cachedIPandPort})  {_translator["ClickToConnect"]}",
+                                name = Localizer["DirectConnect"],
+                                value = $"[**`connect {cachedIPandPort}`**]({GetCustomDomain()}?ip={cachedIPandPort})  {Localizer["ClickToConnect"]}",
                                 inline = false
                             }
                         }

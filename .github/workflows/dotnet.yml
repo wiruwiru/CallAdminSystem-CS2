@@ -26,7 +26,7 @@ jobs:
     - name: Restore
       run: dotnet restore
     - name: Build
-      run: dotnet build ${{ env.PROJECT_PATH }} -c WeaponPaints -o ${{ env.OUTPUT_PATH }}
+      run: dotnet build ${{ env.PROJECT_PATH }} -c Release -o ${{ env.OUTPUT_PATH }}
 
   publish:
     if: github.event_name == 'push'
@@ -42,18 +42,11 @@ jobs:
     - name: Restore
       run: dotnet restore
     - name: Build
-      run: dotnet build ${{ env.PROJECT_PATH }} -c WeaponPaints -o ${{ env.OUTPUT_PATH }}
+      run: dotnet build ${{ env.PROJECT_PATH }} -c Release -o ${{ env.OUTPUT_PATH }}
     - name: Zip
       run: |
         cd ${{ env.OUTPUT_PATH }}
         zip -r ../${{ env.PROJECT_NAME }}.zip .
-        cd ..
-        if [ -d "./lang" ]; then
-          zip -ur ./${{ env.PROJECT_NAME }}.zip ./lang
-        else
-          echo "The 'lang' directory does not exist."
-          exit 1
-        fi
     - name: CallAdminSystem
       uses: ncipollo/release-action@v1.12.0
       with:
@@ -61,5 +54,6 @@ jobs:
         name: "CallAdminSystem v${{ env.BUILD_NUMBER }}"
         tag: "build-${{ env.BUILD_NUMBER }}"
         body: |
-          Place the plugin in game/csgo/addons/counterstrikesharp/plugins/CallAdminSystem
-          After first server start, config.json and reasons.txt be created
+          Place the plugin in **`csgo/addons/counterstrikesharp/plugins/CallAdminSystem`**.
+          
+          After the first server startup, the configuration file will be created in **`csgo/addons/counterstrikesharp/configs/plugins/CallAdminSystem`**.
