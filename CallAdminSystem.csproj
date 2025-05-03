@@ -8,6 +8,7 @@
     
     <ItemGroup>
       <PackageReference Include="CounterStrikeSharp.API" Version="*" />
+      <PackageReference Include="CS2ScreenMenuAPI" Version="3.0.5" />
     </ItemGroup>
 
     <ItemGroup>
