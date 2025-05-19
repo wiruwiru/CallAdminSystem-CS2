@@ -6,13 +6,14 @@ using CounterStrikeSharp.API.Modules.Commands;
 using CounterStrikeSharp.API.Modules.Cvars;
 using CounterStrikeSharp.API.Modules.Admin;
 using CounterStrikeSharp.API.Modules.Menu;
+using CounterStrikeSharp.API.Modules.Utils;
 
 namespace CallAdminSystem;
 
 public class CallAdminSystem : BasePlugin, IPluginConfig<BaseConfigs>
 {
     public override string ModuleAuthor => "luca.uy";
-    public override string ModuleVersion => "v1.1.0";
+    public override string ModuleVersion => "v1.1.0b";
     public override string ModuleName => "CallAdminSystem";
     public override string ModuleDescription => "Allows players to report another user who is breaking the community rules, this report is sent as an embed message to Discord so that administrators can respond.";
 
@@ -60,10 +61,13 @@ public class CallAdminSystem : BasePlugin, IPluginConfig<BaseConfigs>
                 {
                     if (player == controller) continue;
 
-                    var playerName = player.PlayerName;
-                    playerName = playerName.Replace("[Ready]", "").Replace("[No Ready]", "").Trim();
+                    if (player.Team == CsTeam.Terrorist || player.Team == CsTeam.CounterTerrorist || player.Team == CsTeam.Spectator)
+                    {
+                        var playerName = player.PlayerName;
+                        playerName = playerName.Replace("[Ready]", "").Replace("[No Ready]", "").Trim();
 
-                    reportMenu.AddMenuOption($"{playerName} [#{player.Index}]", HandleMenu);
+                        reportMenu.AddMenuOption($"{playerName} [#{player.Index}]", HandleMenu);
+                    }
                 }
 
                 _lastCommandTimes[playerId] = DateTime.Now;
