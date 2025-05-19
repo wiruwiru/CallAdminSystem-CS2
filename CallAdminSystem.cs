@@ -5,6 +5,7 @@ using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Modules.Commands;
 using CounterStrikeSharp.API.Modules.Cvars;
 using CounterStrikeSharp.API.Modules.Admin;
+using CounterStrikeSharp.API.Modules.Utils;
 using Microsoft.Extensions.Localization;
 using CS2ScreenMenuAPI;
 
@@ -98,7 +99,7 @@ public class CallAdminSystem : BasePlugin, IPluginConfig<BaseConfigs>
 
         foreach (var player in players)
         {
-            if (player == controller) continue;
+            if (player == controller || player.Team == CsTeam.None) continue;
 
             var playerName = player.PlayerName;
             playerName = playerName.Replace("[Ready]", "").Replace("[No Ready]", "").Trim();
