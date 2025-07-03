@@ -8,6 +8,7 @@
     
     <ItemGroup>
       <PackageReference Include="CounterStrikeSharp.API" Version="*" />
+      <Reference Include="MenuManagerApi"><HintPath>MenuManagerApi.dll</HintPath></Reference>
     </ItemGroup>
 
     <ItemGroup>

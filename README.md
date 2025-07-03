@@ -8,13 +8,15 @@ https://github.com/user-attachments/assets/fd49799b-bc89-4d4d-8b9a-627670620c80
 
 2. Download [CallAdminSystem.zip](https://github.com/wiruwiru/CallAdminSystem-CS2/releases) from the releases section.
 
-3. Unzip the archive and upload it to the game server
+3. From version **2.0.0 or higher**, the plugin requires the [MenuManagerCS2](https://github.com/NickFox007/MenuManagerCS2) dependency.
 
-4. Start the server and wait for the config.json file to be generated.
+4. Unzip the archive and upload it to the game server
 
-5. Complete the configuration file with the parameters of your choice.
+5. Start the server and wait for the config.json file to be generated.
 
-6. Write possible reporting reasons in reasons.txt.
+6. Complete the configuration file with the parameters of your choice.
+
+7. Write possible reporting reasons in reasons.txt.
 
 # Config
 | Parameter | Description | Required     |

@@ -1,7 +1,7 @@
 using CounterStrikeSharp.API.Core;
 using System.Text.Json.Serialization;
 
-namespace CallAdminSystem;
+namespace CallAdminSystem.Configs;
 
 public class BaseConfigs : BasePluginConfig
 {
@@ -43,4 +43,6 @@ public class BaseConfigs : BasePluginConfig
 
     [JsonPropertyName("ClaimEmbedColor")]
     public string ClaimEmbedColor { get; set; } = "#100c85";
+
+
 }
