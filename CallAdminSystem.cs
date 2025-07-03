@@ -54,7 +54,26 @@ public class CallAdminSystem : BasePlugin, IPluginConfig<BaseConfigs>
 
         if (_menuApi == null)
         {
-            Console.WriteLine("[CallAdminSystem] MenuManager API not found");
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine("[CallAdminSystem] CRITICAL ERROR: MenuManager API not found!");
+            Console.WriteLine("[CallAdminSystem] MenuManager is a required dependency for this plugin to function.");
+            Console.WriteLine("[CallAdminSystem] Please install MenuManagerCS2 from: https://github.com/NickFox007/MenuManagerCS2");
+            Console.WriteLine("[CallAdminSystem] Plugin will now unload automatically.");
+            Console.ResetColor();
+
+            Server.NextFrame(() =>
+            {
+                try
+                {
+                    Server.ExecuteCommand($"css_plugins unload {ModuleName}");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[CallAdminSystem] Error during auto-unload: {ex.Message}");
+                }
+            });
+
+            return;
         }
         else
         {

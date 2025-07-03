@@ -23,5 +23,6 @@
   "LinkToProfile": "link to profile",
   "Name": "Name:",
   "InsufficientPlayers": "Not enough players to use this command.",
-  "UnknownPlayer": "Unknown"
+  "UnknownPlayer": "Unknown",
+  "Back": "Back"
 }

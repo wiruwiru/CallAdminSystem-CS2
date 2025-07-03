@@ -23,7 +23,7 @@ public class DiscordService : IDisposable
         _config = config;
     }
 
-    public async Task SendReportToDiscord(string reporterName, string reporterSteamId, 
+    public async Task SendReportToDiscord(string reporterName, string reporterSteamId,
         string targetName, string targetSteamId, string reason, string serverInfo, string hostname)
     {
         try
@@ -37,7 +37,8 @@ public class DiscordService : IDisposable
             string mentionMessage = "";
             if (!string.IsNullOrEmpty(_config.MentionRoleID))
             {
-                mentionMessage = $"<@&{_config.MentionRoleID}> has been called to the server!";
+                string mentionRoleIDMessage = $"<@&{_config.MentionRoleID}>";
+                mentionMessage = _localizer["DiscordMention", mentionRoleIDMessage].Value;
             }
 
             var payload = new
@@ -48,32 +49,32 @@ public class DiscordService : IDisposable
                     new
                     {
                         title = hostname,
-                        description = "There is a new report on the server",
+                        description = _localizer["NewReportDescription"].Value,
                         color = ConvertHexToColor(_config.ReportEmbedColor),
                         fields = new[]
                         {
                             new
                             {
-                                name = "🎯 Victim",
-                                value = $"**Name:** {reporterNameClean}\n**SteamID:** {reporterSteamId}\n**Steam:** [Link to profile](https://steamcommunity.com/profiles/{reporterSteamId}/)",
+                                name = $"🎯 {_localizer["Victim"]}",
+                                value = $"**{_localizer["Name"]}** {reporterNameClean}\n**SteamID:** {reporterSteamId}\n**Steam:** [{_localizer["LinkToProfile"]}](https://steamcommunity.com/profiles/{reporterSteamId}/)",
                                 inline = false
                             },
                             new
                             {
-                                name = "⚠️ Reported",
-                                value = $"**Name:** {targetNameClean}\n**SteamID:** {targetSteamId}\n**Steam:** [Link to profile](https://steamcommunity.com/profiles/{targetSteamId}/)",
+                                name = $"⚠️ {_localizer["Reported"]}",
+                                value = $"**{_localizer["Name"]}** {targetNameClean}\n**SteamID:** {targetSteamId}\n**Steam:** [{_localizer["LinkToProfile"]}](https://steamcommunity.com/profiles/{targetSteamId}/)",
                                 inline = false
                             },
                             new
                             {
-                                name = "📝 Reason",
+                                name = $"📝 {_localizer["Reason"]}",
                                 value = reasonClean,
                                 inline = false
                             },
                             new
                             {
-                                name = "🔗 Direct Connect",
-                                value = $"[**`connect {serverInfo}`**]({_config.CustomDomain}?ip={serverInfo}) [Click to join]",
+                                name = $"🔗 {_localizer["DirectConnect"]}",
+                                value = $"[**`connect {serverInfo}`**]({_config.CustomDomain}?ip={serverInfo}) {_localizer["ClickToConnect"]}",
                                 inline = false
                             }
                         }
@@ -100,20 +101,20 @@ public class DiscordService : IDisposable
             var embed = new
             {
                 title = hostname,
-                description = "An administrator is handling reports on this server.",
+                description = _localizer["EmbedDescription"].Value,
                 color = ConvertHexToColor(_config.ClaimEmbedColor),
                 fields = new[]
                 {
                     new
                     {
-                        name = "👮 Administrator",
+                        name = $"👮 {_localizer["Admin"]}",
                         value = adminNameClean,
                         inline = false
                     },
                     new
                     {
-                        name = "🔗 Direct Connect",
-                        value = $"[**`connect {serverInfo}`**]({_config.CustomDomain}?ip={serverInfo}) [Click to join]",
+                        name = $"🔗 {_localizer["DirectConnect"]}",
+                        value = $"[**`connect {serverInfo}`**]({_config.CustomDomain}?ip={serverInfo}) {_localizer["ClickToConnect"]}",
                         inline = false
                     }
                 }

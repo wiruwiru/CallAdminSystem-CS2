@@ -57,8 +57,6 @@ public class ClaimCommands
         });
 
         controller.PrintToChat($"{_localizer["Prefix"]} {_localizer["SendClaim"]}");
-
-        Console.WriteLine($"[CallAdminSystem] Admin {clientName} claimed presence on server");
     }
 
     private static string CleanPlayerName(string playerName)

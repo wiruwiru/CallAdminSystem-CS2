@@ -85,7 +85,6 @@ public class ReportService : IDisposable
                 );
             });
 
-            Console.WriteLine($"[CallAdminSystem] Admin claim sent: {CleanPlayerName(adminName)}");
         }
         catch (Exception ex)
         {
