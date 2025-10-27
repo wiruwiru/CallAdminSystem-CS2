@@ -45,7 +45,7 @@ public class ReportCommands
         }
 
         var players = Utilities.GetPlayers().Where(x => !x.IsBot && x.Connected == PlayerConnectedState.PlayerConnected).ToList();
-        if (players.Count < _config.MinimumPlayers)
+        if (players.Count < _config.Server.MinimumPlayers)
         {
             controller.PrintToChat($"{_localizer["Prefix"]} {_localizer["InsufficientPlayers"]}");
             return;

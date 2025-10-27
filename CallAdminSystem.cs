@@ -1,5 +1,6 @@
 using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
+using CounterStrikeSharp.API.Core.Attributes;
 using CounterStrikeSharp.API.Core.Capabilities;
 using CounterStrikeSharp.API.Modules.Commands;
 using CounterStrikeSharp.API.Modules.Cvars;
@@ -12,10 +13,11 @@ using CallAdminSystem.Models;
 
 namespace CallAdminSystem;
 
+[MinimumApiVersion(342)]
 public class CallAdminSystem : BasePlugin, IPluginConfig<BaseConfigs>
 {
     public override string ModuleAuthor => "luca.uy";
-    public override string ModuleVersion => "v2.0.0";
+    public override string ModuleVersion => "2.0.0";
     public override string ModuleName => "CallAdminSystem";
     public override string ModuleDescription => "Allows players to report users with Discord integration and MenuManager support";
 
@@ -119,12 +121,15 @@ public class CallAdminSystem : BasePlugin, IPluginConfig<BaseConfigs>
 
         _claimCommands = new ClaimCommands(Config, _discordService!, () => _cachedIPandPort ?? "", () => _hostname ?? "", Localizer);
 
-        foreach (var command in Config.ReportCommands)
+        foreach (var command in Config.Commands.ReportCommands)
         {
             AddCommand(command, "Report a player", _reportCommands.HandleReportCommand);
         }
 
-        AddCommand(Config.ClaimCommand, "Claim admin presence", _claimCommands.HandleClaimCommand);
+        foreach (var command in Config.Commands.ClaimCommands)
+        {
+            AddCommand(command, "Claim admin presence", _claimCommands.HandleClaimCommand);
+        }
     }
 
     private void SetupListeners()
@@ -139,18 +144,18 @@ public class CallAdminSystem : BasePlugin, IPluginConfig<BaseConfigs>
 
     private void InitializeServerInfo()
     {
-        if (Config.GetIPandPORTautomatic)
+        if (Config.Server.GetIPandPORTautomatic)
         {
             string? ip = ConVar.Find("ip")?.StringValue;
             string? port = ConVar.Find("hostport")?.GetPrimitiveValue<int>().ToString();
-            _cachedIPandPort = !string.IsNullOrEmpty(ip) && !string.IsNullOrEmpty(port) ? $"{ip}:{port}" : Config.IPandPORT;
+            _cachedIPandPort = !string.IsNullOrEmpty(ip) && !string.IsNullOrEmpty(port) ? $"{ip}:{port}" : Config.Server.IPandPORT;
         }
         else
         {
-            _cachedIPandPort = Config.IPandPORT;
+            _cachedIPandPort = Config.Server.IPandPORT;
         }
 
-        _hostname = Config.UseHostname ? (ConVar.Find("hostname")?.StringValue ?? Localizer["NewReport"]) : Localizer["NewReport"];
+        _hostname = Config.Server.UseHostname ? (ConVar.Find("hostname")?.StringValue ?? Localizer["NewReport"]) : Localizer["NewReport"];
     }
 
     private void CreateReasonsFileIfNotExists()

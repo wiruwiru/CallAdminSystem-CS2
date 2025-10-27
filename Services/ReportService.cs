@@ -2,6 +2,7 @@ using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Modules.Cvars;
 using Microsoft.Extensions.Localization;
+
 using CallAdminSystem.Configs;
 
 namespace CallAdminSystem.Services;
@@ -96,30 +97,30 @@ public class ReportService : IDisposable
     {
         try
         {
-            if (_config.GetIPandPORTautomatic)
+            if (_config.Server.GetIPandPORTautomatic)
             {
                 string? ip = ConVar.Find("ip")?.StringValue;
                 string? port = ConVar.Find("hostport")?.GetPrimitiveValue<int>().ToString();
-                _cachedServerInfo = !string.IsNullOrEmpty(ip) && !string.IsNullOrEmpty(port) ? $"{ip}:{port}" : _config.IPandPORT;
+                _cachedServerInfo = !string.IsNullOrEmpty(ip) && !string.IsNullOrEmpty(port) ? $"{ip}:{port}" : _config.Server.IPandPORT;
             }
             else
             {
-                _cachedServerInfo = _config.IPandPORT;
+                _cachedServerInfo = _config.Server.IPandPORT;
             }
 
-            _cachedHostname = _config.UseHostname ? (ConVar.Find("hostname")?.StringValue ?? _localizer["NewReport"]) : _localizer["NewReport"];
+            _cachedHostname = _config.Server.UseHostname ? (ConVar.Find("hostname")?.StringValue ?? _localizer["NewReport"]) : _localizer["NewReport"];
         }
         catch (Exception ex)
         {
             Console.WriteLine($"[CallAdminSystem] Error updating server info: {ex.Message}");
-            _cachedServerInfo = _config.IPandPORT;
+            _cachedServerInfo = _config.Server.IPandPORT;
             _cachedHostname = _localizer["NewReport"];
         }
     }
 
     public string GetServerInfo()
     {
-        return _cachedServerInfo ?? _config.IPandPORT;
+        return _cachedServerInfo ?? _config.Server.IPandPORT;
     }
 
     public string GetHostname()

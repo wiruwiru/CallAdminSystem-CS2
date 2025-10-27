@@ -26,7 +26,7 @@ public class CooldownService : IDisposable
         if (_lastCommandTimes.TryGetValue(playerId, out DateTime lastCommandTime))
         {
             var secondsSinceLastCommand = (int)(DateTime.Now - lastCommandTime).TotalSeconds;
-            secondsRemaining = _config.CommandCooldownSeconds - secondsSinceLastCommand;
+            secondsRemaining = _config.Commands.CommandCooldownSeconds - secondsSinceLastCommand;
             return secondsRemaining <= 0;
         }
 
@@ -66,7 +66,7 @@ public class CooldownService : IDisposable
         foreach (var kvp in _lastCommandTimes)
         {
             var elapsed = now - kvp.Value;
-            var cooldownTime = TimeSpan.FromSeconds(_config.CommandCooldownSeconds);
+            var cooldownTime = TimeSpan.FromSeconds(_config.Commands.CommandCooldownSeconds);
 
             if (elapsed < cooldownTime)
             {
@@ -84,7 +84,7 @@ public class CooldownService : IDisposable
 
         foreach (var kvp in _lastCommandTimes)
         {
-            if ((now - kvp.Value).TotalSeconds > _config.CommandCooldownSeconds + 300)
+            if ((now - kvp.Value).TotalSeconds > _config.Commands.CommandCooldownSeconds + 300)
             {
                 expiredKeys.Add(kvp.Key);
             }

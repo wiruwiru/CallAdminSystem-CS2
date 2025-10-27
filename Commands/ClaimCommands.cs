@@ -29,7 +29,7 @@ public class ClaimCommands
     {
         if (controller == null || !controller.IsValid) return;
 
-        if (!CommandUtils.HasPermission(controller, _config.ClaimCommandFlag))
+        if (!CommandUtils.HasPermission(controller, _config.Permissions.ClaimCommandFlag))
         {
             controller.PrintToChat($"{_localizer["Prefix"]} {_localizer["NoPermissions"]}");
             return;
