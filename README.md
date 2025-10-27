@@ -1,21 +1,18 @@
 # CallAdminSystem CS2
 Allows players to report another user who is breaking the community rules, this report is sent as an embed message to Discord so that administrators can respond.
 
+> [!IMPORTANT]
+> From version **2.0.0 or higher**, the plugin requires the [MenuManagerCS2](https://github.com/NickFox007/MenuManagerCS2) dependency.
+
 https://github.com/user-attachments/assets/fd49799b-bc89-4d4d-8b9a-627670620c80
 
 ## Installation
 1. Install [CounterStrike Sharp](https://github.com/roflmuffin/CounterStrikeSharp) and [Metamod:Source](https://www.sourcemm.net/downloads.php/?branch=master)
-
 2. Download [CallAdminSystem.zip](https://github.com/wiruwiru/CallAdminSystem-CS2/releases) from the releases section.
-
-3. From version **2.0.0 or higher**, the plugin requires the [MenuManagerCS2](https://github.com/NickFox007/MenuManagerCS2) dependency.
-
+3. Install the [MenuManagerCS2](https://github.com/NickFox007/MenuManagerCS2) dependency (required).
 4. Unzip the archive and upload it to the game server
-
 5. Start the server and wait for the config.json file to be generated.
-
 6. Complete the configuration file with the parameters of your choice.
-
 7. Write possible reporting reasons in reasons.txt.
 
 # Config
@@ -24,11 +21,11 @@ https://github.com/user-attachments/assets/fd49799b-bc89-4d4d-8b9a-627670620c80
 | `WebhookUrl` | You must create it in the channel where you will send the notices. |**YES** |
 | `IPandPORT` | Replace with the IP address of your server. |**YES** |
 | `GetIPandPORTautomatic` | When you activate this option the plugin will try to get the IP:PORT of your server automatically, in case it is not possible use the IPandPORT configuration. | **YES** |
-| `UseHostname` | If you set this configuration to true, the “EmbedTitle” of the translation will be replaced by the hostname you have configured in your server.cfg file. | **YES** |
+| `UseHostname` | If you set this configuration to true, the "EmbedTitle" of the translation will be replaced by the hostname you have configured in your server.cfg file. | **YES** |
 | `CustomDomain` | You can replace it with your domain if you want, the connect.php file is available in the main branch.  |**YES** |
 | `MentionRoleID` | You must have the discord developer mode activated, right click on the role and copy its ID. |**YES** |
-| `ReportCommand` | Sets the command with which players can report other users. |**YES** |
-| `ClaimCommand` | Sets the command with which administrators can claim reports from that server. |**YES** |
+| `ReportCommands` | Sets the commands with which players can report other users (list of commands). |**YES** |
+| `ClaimCommands` | Sets the commands with which administrators can claim reports from that server (list of commands). |**YES** |
 | `ClaimCommandFlag` | Sets the permission that is needed to use the claim command |**YES** |
 | `CommandCooldownSeconds` | Cooling down time for the user to be able to use the command again (in seconds). |**YES** |
 | `MinimumPlayers` | Minimum players that must be connected to be able to use the command. |**YES** |
@@ -36,21 +33,34 @@ https://github.com/user-attachments/assets/fd49799b-bc89-4d4d-8b9a-627670620c80
 | `ClaimEmbedColor` | Configure the color of the embed, you must set a hex color. Example: #100c85 |**YES** |
 
 ## Configuration example
-```
+```json
 {
-  "WebhookUrl": "https://discord.com/api/webhooks/xxxxx/xxxxxxxxx,
-  "IPandPORT": "45.235.99.18:27025",
-  "GetIPandPORTautomatic": true,
-  "UseHostname": true,
-  "CustomDomain": "https://crisisgamer.com/redirect/connect.php",
-  "MentionRoleID": "1111767358881681519",
-  "ReportCommand": [ "css_call", "css_report" ],
-  "ClaimCommand": "css_claim",
-  "ClaimCommandFlag": "@css/generic",
-  "CommandCooldownSeconds": 60,
-  "MinimumPlayers": 2,
-  "ReportEmbedColor": "#eb4034",
-  "ClaimEmbedColor": "#100c85",
+  "ServerSettings": {
+    "IPandPORT": "45.235.99.18:27025",
+    "GetIPandPORTautomatic": true,
+    "UseHostname": true,
+    "CustomDomain": "https://crisisgamer.com/connect",
+    "MinimumPlayers": 2
+  },
+  "DiscordSettings": {
+    "WebhookUrl": "https://discord.com/api/webhooks/xxxxx/xxxxxxxxx",
+    "MentionRoleID": "1111767358881681519",
+    "ReportEmbedColor": "#eb4034",
+    "ClaimEmbedColor": "#100c85"
+  },
+  "CommandSettings": {
+    "ReportCommands": [
+      "css_call",
+      "css_report"
+    ],
+    "ClaimCommands": [
+      "css_claim"
+    ],
+    "CommandCooldownSeconds": 120
+  },
+  "PermissionSettings": {
+    "ClaimCommandFlag": "@css/generic"
+  },
   "ConfigVersion": 1
 }
 ```
