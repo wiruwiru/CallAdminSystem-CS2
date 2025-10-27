@@ -1,411 +1,192 @@
-using System.Text;
-using System.Text.Json;
 using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
+using CounterStrikeSharp.API.Core.Attributes;
+using CounterStrikeSharp.API.Core.Capabilities;
 using CounterStrikeSharp.API.Modules.Commands;
 using CounterStrikeSharp.API.Modules.Cvars;
-using CounterStrikeSharp.API.Modules.Admin;
-using CounterStrikeSharp.API.Modules.Menu;
-using CounterStrikeSharp.API.Modules.Utils;
-using Microsoft.Extensions.Localization;
+using MenuManager;
+
+using CallAdminSystem.Configs;
+using CallAdminSystem.Commands;
+using CallAdminSystem.Services;
+using CallAdminSystem.Models;
 
 namespace CallAdminSystem;
 
+[MinimumApiVersion(342)]
 public class CallAdminSystem : BasePlugin, IPluginConfig<BaseConfigs>
 {
     public override string ModuleAuthor => "luca.uy";
-    public override string ModuleVersion => "v1.1.0b";
+    public override string ModuleVersion => "2.0.0";
     public override string ModuleName => "CallAdminSystem";
-    public override string ModuleDescription => "Allows players to report another user who is breaking the community rules, this report is sent as an embed message to Discord so that administrators can respond.";
+    public override string ModuleDescription => "Allows players to report users with Discord integration and MenuManager support";
 
-    private Translator _translator;
+    public required BaseConfigs Config { get; set; }
 
-    private Dictionary<string, DateTime> _lastCommandTimes = new Dictionary<string, DateTime>();
-    private string? cachedIPandPort;
-    private string? _hostname;
+    // MenuManager capability
+    private IMenuApi? _menuApi;
+    private readonly PluginCapability<IMenuApi?> _menuCapability = new("menu:nfcore");
+
+    // Services
+    private CooldownService? _cooldownService;
+    private DiscordService? _discordService;
+    private ReportService? _reportService;
+
+    // Commands
+    private ReportCommands? _reportCommands;
+    private ClaimCommands? _claimCommands;
+
+    // Data storage
     private PersonTargetData?[] _selectedReason = new PersonTargetData?[65];
+    private string? _cachedIPandPort;
+    private string? _hostname;
 
-    public CallAdminSystem(IStringLocalizer localizer)
-    {
-        _translator = new Translator(localizer);
-    }
     public override void Load(bool hotReload)
     {
-        var mapsFilePath = Path.Combine(ModuleDirectory, "reasons.txt");
-        if (!File.Exists(mapsFilePath))
-            File.WriteAllText(mapsFilePath, "");
+        InitializeServices();
+        InitializeCommands();
+        SetupListeners();
+        InitializeServerInfo();
+        CreateReasonsFileIfNotExists();
+    }
 
-        RegisterListener<Listeners.OnClientConnected>(slot => _selectedReason[slot + 1] = new PersonTargetData { Target = -1, IsSelectedReason = false });
-        RegisterListener<Listeners.OnClientDisconnectPost>(slot => _selectedReason[slot + 1] = null);
+    public override void OnAllPluginsLoaded(bool hotReload)
+    {
+        _menuApi = _menuCapability.Get();
 
-        foreach (var command in Config.ReportCommands)
+        if (_menuApi == null)
         {
-            AddCommand(command, "", (controller, info) =>
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine("[CallAdminSystem] CRITICAL ERROR: MenuManager API not found!");
+            Console.WriteLine("[CallAdminSystem] MenuManager is a required dependency for this plugin to function.");
+            Console.WriteLine("[CallAdminSystem] Please install MenuManagerCS2 from: https://github.com/NickFox007/MenuManagerCS2");
+            Console.WriteLine("[CallAdminSystem] Plugin will now unload automatically.");
+            Console.ResetColor();
+
+            Server.NextFrame(() =>
             {
-                if (controller == null) return;
-
-                var players = Utilities.GetPlayers().Where(x => !x.IsBot && x.Connected == PlayerConnectedState.PlayerConnected);
-
-                if (players.Count() < Config.MinimumPlayers)
+                try
                 {
-                    controller.PrintToChat(Localizer["Prefix"] + " " + _translator["InsufficientPlayers"]);
-                    return;
+                    Server.ExecuteCommand($"css_plugins unload {ModuleName}");
                 }
-
-                string playerId = controller.SteamID.ToString();
-
-                int secondsRemaining;
-                if (!CheckCommandCooldown(playerId, out secondsRemaining))
+                catch (Exception ex)
                 {
-                    controller.PrintToChat(_translator["Prefix"] + " " + _translator["CommandCooldownMessage", secondsRemaining]);
-                    return;
+                    Console.WriteLine($"[CallAdminSystem] Error during auto-unload: {ex.Message}");
                 }
-
-                var reportMenu = new ChatMenu(_translator["SelectPlayerToReport"]);
-                reportMenu.MenuOptions.Clear();
-
-                foreach (var player in players)
-                {
-                    if (player == controller || player.Team == CsTeam.None) continue;
-
-                    var playerName = player.PlayerName;
-                    playerName = playerName.Replace("[Ready]", "").Replace("[No Ready]", "").Trim();
-
-                    reportMenu.AddMenuOption($"{playerName} [#{player.Index}]", HandleMenu);
-                }
-
-                _lastCommandTimes[playerId] = DateTime.Now;
-                MenuManager.OpenChatMenu(controller, reportMenu);
             });
-        }
 
-        AddCommand(Config.ClaimCommand, "", (controller, info) =>
-        {
-            if (controller == null) return;
-
-            var validador = new RequiresPermissions(Config.ClaimCommandFlag);
-            validador.Command = Config.ClaimCommand;
-            if (!validador.CanExecuteCommand(controller))
-            {
-                controller.PrintToChat(_translator["Prefix"] + " " + _translator["NoPermissions"]);
-                return;
-            }
-
-            ClaimCommand(controller, controller.PlayerName ?? _translator["UnknownPlayer"]);
-
-            controller.PrintToChat(_translator["Prefix"] + " " + _translator["SendClaim"]);
-        });
-
-        AddCommandListener("say", Listener_Say);
-        AddCommandListener("say_team", Listener_Say);
-
-        if (Config.GetIPandPORTautomatic)
-        {
-            string? ip = ConVar.Find("ip")?.StringValue;
-            string? port = ConVar.Find("hostport")?.GetPrimitiveValue<int>().ToString();
-
-            cachedIPandPort = !string.IsNullOrEmpty(ip) && !string.IsNullOrEmpty(port) ? $"{ip}:{port}" : Config.IPandPORT;
+            return;
         }
         else
         {
-            cachedIPandPort = Config.IPandPORT;
+            if (_reportCommands != null)
+            {
+                _reportCommands.SetMenuApi(_menuApi);
+            }
         }
-
-        _hostname = Config.UseHostname ? (ConVar.Find("hostname")?.StringValue ?? _translator["NewReport"]) : _translator["NewReport"];
     }
-    public required BaseConfigs Config { get; set; }
 
     public void OnConfigParsed(BaseConfigs config)
     {
         Config = config;
+
+        if (_discordService != null)
+        {
+            _discordService.UpdateConfig(config);
+        }
+        if (_cooldownService != null)
+        {
+            _cooldownService.UpdateConfig(config);
+        }
+        if (_reportService != null)
+        {
+            _reportService.UpdateConfig(config);
+        }
+
+        InitializeServerInfo();
     }
 
-    private bool CheckCommandCooldown(string playerId, out int secondsRemaining)
+    private void InitializeServices()
     {
-        if (_lastCommandTimes.TryGetValue(playerId, out DateTime lastCommandTime))
+        _cooldownService = new CooldownService(Config);
+        _discordService = new DiscordService(Config, Localizer);
+        _reportService = new ReportService(Config, _discordService, Localizer);
+    }
+
+    private void InitializeCommands()
+    {
+        if (_cooldownService == null || _reportService == null) return;
+
+        _reportCommands = new ReportCommands(Config, _cooldownService, _reportService, _selectedReason, Localizer);
+
+        _claimCommands = new ClaimCommands(Config, _discordService!, () => _cachedIPandPort ?? "", () => _hostname ?? "", Localizer);
+
+        foreach (var command in Config.Commands.ReportCommands)
         {
-            var secondsSinceLastCommand = (int)(DateTime.Now - lastCommandTime).TotalSeconds;
-            secondsRemaining = Config.CommandCooldownSeconds - secondsSinceLastCommand;
-            return secondsRemaining <= 0;
+            AddCommand(command, "Report a player", _reportCommands.HandleReportCommand);
+        }
+
+        foreach (var command in Config.Commands.ClaimCommands)
+        {
+            AddCommand(command, "Claim admin presence", _claimCommands.HandleClaimCommand);
+        }
+    }
+
+    private void SetupListeners()
+    {
+        RegisterListener<Listeners.OnClientConnected>(slot => _selectedReason[(int)slot + 1] = new PersonTargetData { Target = -1, IsSelectedReason = false });
+
+        RegisterListener<Listeners.OnClientDisconnectPost>(slot => _selectedReason[(int)slot + 1] = null);
+
+        AddCommandListener("say", OnPlayerSay);
+        AddCommandListener("say_team", OnPlayerSay);
+    }
+
+    private void InitializeServerInfo()
+    {
+        if (Config.Server.GetIPandPORTautomatic)
+        {
+            string? ip = ConVar.Find("ip")?.StringValue;
+            string? port = ConVar.Find("hostport")?.GetPrimitiveValue<int>().ToString();
+            _cachedIPandPort = !string.IsNullOrEmpty(ip) && !string.IsNullOrEmpty(port) ? $"{ip}:{port}" : Config.Server.IPandPORT;
         }
         else
         {
-            secondsRemaining = 0;
-            return true;
+            _cachedIPandPort = Config.Server.IPandPORT;
+        }
+
+        _hostname = Config.Server.UseHostname ? (ConVar.Find("hostname")?.StringValue ?? Localizer["NewReport"]) : Localizer["NewReport"];
+    }
+
+    private void CreateReasonsFileIfNotExists()
+    {
+        var reasonsFilePath = Path.Combine(ModuleDirectory, "reasons.txt");
+        if (!File.Exists(reasonsFilePath))
+        {
+            File.WriteAllText(reasonsFilePath, "Cheating\nToxic Behavior\nTeam Killing\nGriefing\n");
         }
     }
 
-    private int ConvertHexToColor(string hex)
+    private HookResult OnPlayerSay(CCSPlayerController? player, CommandInfo commandinfo)
     {
-        if (hex.StartsWith("#"))
-        {
-            hex = hex[1..];
-        }
-        return int.Parse(hex, System.Globalization.NumberStyles.HexNumber);
+        if (player == null || _reportCommands == null) return HookResult.Continue;
+
+        return _reportCommands.HandlePlayerSay(player, commandinfo);
     }
 
-    [CommandHelper(whoCanExecute: CommandUsage.CLIENT_ONLY)]
-    [RequiresPermissions("@css/generic")]
-    public void ClaimCommand(CCSPlayerController? caller, string clientName)
+    public override void Unload(bool hotReload)
     {
-        if (caller == null) return;
-        clientName = clientName.Replace("[Ready]", "").Replace("[No Ready]", "").Trim();
-
-        var embed = new
+        if (_menuApi != null)
         {
-            title = _hostname,
-            description = _translator["EmbedDescription"],
-            color = ConvertHexToColor(Config.ClaimEmbedColor),
-            fields = new[]
-        {
-            new
+            foreach (var player in Utilities.GetPlayers().Where(p => p.IsValid))
             {
-                name = _translator["Admin"],
-                value = $"{clientName}",
-                inline = false
-            },
-            new
-            {
-                name = _translator["DirectConnect"],
-                value = $"[**`connect {cachedIPandPort}`**]({GetCustomDomain()}?ip={cachedIPandPort})  {_translator["ClickToConnect"]}",
-                inline = false
+                _menuApi.CloseMenu(player);
             }
         }
-        };
 
-        Task.Run(() => SendEmbedToDiscord(embed));
+        _menuApi = null;
+        _cooldownService?.Dispose();
+        _reportService?.Dispose();
+        _discordService?.Dispose();
     }
-
-    private ChatMenuOption? _selectedMenuOption;
-
-    private HookResult Listener_Say(CCSPlayerController? player, CommandInfo commandinfo)
-    {
-        if (player == null) return HookResult.Continue;
-
-        if (_selectedReason[player.Index] != null && _selectedReason[player.Index]!.IsSelectedReason && _selectedReason[player.Index]!.CustomReason && _selectedMenuOption != null)
-        {
-            var msg = commandinfo.ArgString;
-
-            if (msg.ToLower().Contains("cancel"))
-            {
-                player.PrintToChat(_translator["Prefix"] + " " + _translator["SubmissionCanceled"]);
-                _selectedReason[player.Index]!.IsSelectedReason = false;
-                return HookResult.Handled;
-            }
-
-            var parts = _selectedMenuOption.Text.Split('[', ']');
-            var lastPart = parts[^2];
-            var numbersOnly = string.Join("", lastPart.Where(char.IsDigit));
-
-            var target = Utilities.GetPlayerFromIndex(int.Parse(numbersOnly.Trim()));
-            var playerName = player.PlayerName;
-            var playerSid = player.SteamID.ToString();
-            var targetName = target.PlayerName;
-            var targetSid = target.SteamID.ToString();
-            var ip = target.SteamID.ToString();
-
-            Task.Run(() => SendMessageToDiscord(playerName, playerSid, targetName, targetSid, msg));
-
-            string PlayerReportedName = target.PlayerName;
-
-            _selectedReason[player.Index]!.IsSelectedReason = false;
-            player.PrintToChat(_translator["Prefix"] + " " + _translator["SendReport", PlayerReportedName]);
-
-            return HookResult.Handled;
-        }
-
-        return HookResult.Continue;
-    }
-
-    private void HandleMenu2CustomReason(CCSPlayerController controller, ChatMenuOption option)
-    {
-        _selectedReason[controller.Index] = new PersonTargetData { IsSelectedReason = true, CustomReason = true };
-
-        controller.PrintToChat(_translator["Prefix"] + " " + _translator["WriteReason"]);
-
-        AddTimer(20.0f, () =>
-        {
-            if (_selectedReason[controller.Index] != null && _selectedReason[controller.Index]!.IsSelectedReason && _selectedReason[controller.Index]!.CustomReason)
-            {
-                controller.PrintToChat(_translator["Prefix"] + " " + _translator["SubmissionCanceled"]);
-                _selectedReason[controller.Index]!.IsSelectedReason = false;
-            }
-        });
-    }
-
-
-    private void HandleMenu(CCSPlayerController controller, ChatMenuOption option)
-    {
-        var parts = option.Text.Split('[', ']');
-        var lastPart = parts[^2];
-        var numbersOnly = string.Join("", lastPart.Where(char.IsDigit));
-
-        _selectedMenuOption = option;
-
-        var index = int.Parse(numbersOnly.Trim());
-        var reason = File.ReadAllLines(Path.Combine(ModuleDirectory, "reasons.txt"));
-        var reasonMenu = new ChatMenu(_translator["SelectReasonToReport"]);
-        reasonMenu.MenuOptions.Clear();
-
-        reasonMenu.AddMenuOption($"{_translator["CustomReason"]} [{index}]", HandleMenu2CustomReason);
-
-        foreach (var a in reason)
-        {
-            reasonMenu.AddMenuOption($"{a} [{index}]", HandleMenu2);
-        }
-        MenuManager.OpenChatMenu(controller, reasonMenu);
-    }
-
-    private void HandleMenu2(CCSPlayerController controller, ChatMenuOption option)
-    {
-        var parts = option.Text.Split('[', ']');
-        var lastPart = parts[^2];
-        var numbersOnly = string.Join("", lastPart.Where(char.IsDigit));
-
-        var target = Utilities.GetPlayerFromIndex(int.Parse(numbersOnly.Trim()));
-        if (target == null)
-        {
-            controller.PrintToChat(_translator["Prefix"] + " " + _translator["PlayerNotFound"]);
-            return;
-        }
-        var playerName = controller.PlayerName;
-        var playerSid = controller.SteamID.ToString();
-        var targetName = target.PlayerName;
-        var targetSid = target.SteamID.ToString();
-        var ip = target.SteamID.ToString();
-
-        string PlayerReportedName = target.PlayerName;
-
-        Task.Run(() => SendMessageToDiscord(playerName, playerSid, targetName, targetSid, parts[0]));
-
-        controller.PrintToChat(_translator["Prefix"] + " " + _translator["SendReport", PlayerReportedName]);
-    }
-
-    private async void SendMessageToDiscord(string clientName, string clientSteamId, string targetName, string targetSteamId, string msg)
-    {
-        try
-        {
-            var webhookUrl = GetWebhook();
-
-            if (string.IsNullOrEmpty(webhookUrl)) return;
-
-            var httpClient = new HttpClient();
-
-            if (string.IsNullOrEmpty(msg)) return;
-            clientName = clientName.Replace("[Ready]", "").Replace("[No Ready]", "").Trim();
-            targetName = targetName.Replace("[Ready]", "").Replace("[No Ready]", "").Trim();
-
-            msg = msg.Trim('"');
-
-            string mentionRoleIDMessage = $"<@&{MentionRoleID()}>";
-            string MentionMessage = _translator["DiscordMention", mentionRoleIDMessage];
-
-            var payload = new
-            {
-
-                content = MentionMessage,
-                embeds = new[]
-                {
-                    new
-                    {
-                        // title = _translator["NewReport"],
-                        title = _hostname,
-                        description = _translator["NewReportDescription"],
-                        color = ConvertHexToColor(Config.ReportEmbedColor),
-                        fields = new[]
-                        {
-                            new
-                            {
-                                name = _translator["Victim"],
-                                value =
-                                    $"**{_translator["Name"]}** {clientName}\n**SteamID:** {clientSteamId}\n**Steam:** [{_translator["LinkToProfile"]}](https://steamcommunity.com/profiles/{clientSteamId}/)",
-                                inline = false
-                            },
-                            new
-                            {
-                                name = _translator["Reported"],
-                                value =
-                                    $"**{_translator["Name"]}** {targetName}\n**SteamID:** {targetSteamId}\n**Steam:** [{_translator["LinkToProfile"]}](https://steamcommunity.com/profiles/{targetSteamId}/)",
-                                inline = false
-                            },
-                            new
-                            {
-                                name = _translator["Reason"],
-                                value = msg,
-                                inline = false
-                            },
-                            new
-                            {
-                                name = _translator["DirectConnect"],
-                                value = $"[**`connect {cachedIPandPort}`**]({GetCustomDomain()}?ip={cachedIPandPort})  {_translator["ClickToConnect"]}",
-                                inline = false
-                            }
-                        }
-                    }
-                }
-            };
-
-            var json = JsonSerializer.Serialize(payload);
-            var content = new StringContent(json, Encoding.UTF8, "application/json");
-            var response = await httpClient.PostAsync(webhookUrl, content);
-
-            Console.ForegroundColor = response.IsSuccessStatusCode ? ConsoleColor.Green : ConsoleColor.Red;
-            Console.WriteLine(response.IsSuccessStatusCode ? "Success" : $"Error: {response.StatusCode}");
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(e);
-            throw;
-        }
-
-    }
-
-    private async Task SendEmbedToDiscord(object embed)
-    {
-        try
-        {
-            var webhookUrl = GetWebhook();
-
-            if (string.IsNullOrEmpty(webhookUrl)) return;
-
-            var httpClient = new HttpClient();
-
-            var payload = new
-            {
-                embeds = new[] { embed }
-            };
-
-            var json = JsonSerializer.Serialize(payload);
-            var content = new StringContent(json, Encoding.UTF8, "application/json");
-            var response = await httpClient.PostAsync(webhookUrl, content);
-
-            Console.ForegroundColor = response.IsSuccessStatusCode ? ConsoleColor.Green : ConsoleColor.Red;
-            Console.WriteLine(response.IsSuccessStatusCode ? "Success" : $"Error: {response.StatusCode}");
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(e);
-            throw;
-        }
-    }
-
-    private string GetWebhook()
-    {
-        return Config.WebhookUrl;
-    }
-    private string GetCustomDomain()
-    {
-        return Config.CustomDomain;
-    }
-    private string MentionRoleID()
-    {
-        return Config.MentionRoleID;
-    }
-}
-
-public class PersonTargetData
-{
-    public int Target { get; set; }
-    public bool IsSelectedReason { get; set; }
-    public bool CustomReason { get; set; }
 }
