@@ -4,6 +4,7 @@ using CounterStrikeSharp.API.Modules.Cvars;
 using Microsoft.Extensions.Localization;
 
 using CallAdminSystem.Configs;
+using CallAdminSystem.Models;
 
 namespace CallAdminSystem.Services;
 
@@ -11,14 +12,16 @@ public class ReportService : IDisposable
 {
     private BaseConfigs _config;
     private readonly DiscordService _discordService;
+    private readonly DatabaseService? _databaseService;
     private readonly IStringLocalizer _localizer;
     private string? _cachedServerInfo;
     private string? _cachedHostname;
 
-    public ReportService(BaseConfigs config, DiscordService discordService, IStringLocalizer localizer)
+    public ReportService(BaseConfigs config, DiscordService discordService, DatabaseService? databaseService, IStringLocalizer localizer)
     {
         _config = config;
         _discordService = discordService;
+        _databaseService = databaseService;
         _localizer = localizer;
         UpdateServerInfo();
     }
@@ -44,6 +47,22 @@ public class ReportService : IDisposable
             var targetName = target.PlayerName;
             var targetSteamId = target.SteamID.ToString();
 
+            ReportRecord? reportRecord = null;
+            if (_databaseService != null && _databaseService.IsEnabled())
+            {
+                reportRecord = new ReportRecord
+                {
+                    Uuid = Guid.NewGuid().ToString(),
+                    ServerAddress = GetServerInfo(),
+                    VictimName = CleanPlayerName(reporterName),
+                    VictimSteamId = reporterSteamId,
+                    ReportedName = CleanPlayerName(targetName),
+                    ReportedSteamId = targetSteamId,
+                    Reason = reason.Trim('"'),
+                    Timestamp = DateTime.Now
+                };
+            }
+
             Task.Run(async () =>
             {
                 await _discordService.SendReportToDiscord(
@@ -55,6 +74,11 @@ public class ReportService : IDisposable
                     GetServerInfo(),
                     GetHostname()
                 );
+
+                if (reportRecord != null && _databaseService != null)
+                {
+                    await SaveReportToDatabase(reportRecord);
+                }
             });
 
             Console.WriteLine($"[CallAdminSystem] Report sent: {CleanPlayerName(reporterName)} reported {CleanPlayerName(targetName)} for: {reason}");
@@ -62,6 +86,28 @@ public class ReportService : IDisposable
         catch (Exception ex)
         {
             Console.WriteLine($"[CallAdminSystem] Error in SendReport: {ex.Message}");
+        }
+    }
+
+    private async Task SaveReportToDatabase(ReportRecord record)
+    {
+        if (_databaseService == null) return;
+
+        try
+        {
+            bool saved = await _databaseService.SaveReport(record);
+            if (saved)
+            {
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.WriteLine($"[CallAdminSystem] Report saved to database (UUID: {record.Uuid})");
+                Console.ResetColor();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine($"[CallAdminSystem] Error saving report to database: {ex.Message}");
+            Console.ResetColor();
         }
     }
 

@@ -17,9 +17,9 @@ namespace CallAdminSystem;
 public class CallAdminSystem : BasePlugin, IPluginConfig<BaseConfigs>
 {
     public override string ModuleAuthor => "luca.uy";
-    public override string ModuleVersion => "2.0.0";
+    public override string ModuleVersion => "2.1.0";
     public override string ModuleName => "CallAdminSystem";
-    public override string ModuleDescription => "Allows players to report users with Discord integration and MenuManager support";
+    public override string ModuleDescription => "Allows players to report users with Discord integration, MenuManager support and MySQL database";
 
     public required BaseConfigs Config { get; set; }
 
@@ -30,6 +30,7 @@ public class CallAdminSystem : BasePlugin, IPluginConfig<BaseConfigs>
     // Services
     private CooldownService? _cooldownService;
     private DiscordService? _discordService;
+    private DatabaseService? _databaseService;
     private ReportService? _reportService;
 
     // Commands
@@ -48,6 +49,8 @@ public class CallAdminSystem : BasePlugin, IPluginConfig<BaseConfigs>
         SetupListeners();
         InitializeServerInfo();
         CreateReasonsFileIfNotExists();
+
+        _ = InitializeDatabaseAsync();
     }
 
     public override void OnAllPluginsLoaded(bool hotReload)
@@ -104,13 +107,41 @@ public class CallAdminSystem : BasePlugin, IPluginConfig<BaseConfigs>
         }
 
         InitializeServerInfo();
+        _ = InitializeDatabaseAsync();
+    }
+
+    private async Task InitializeDatabaseAsync()
+    {
+        try
+        {
+            if (_databaseService != null && Config.Database.Enabled)
+            {
+                await _databaseService.InitializeDatabase();
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.WriteLine("[CallAdminSystem] Database initialized successfully!");
+                Console.ResetColor();
+            }
+            else if (_databaseService != null && !Config.Database.Enabled)
+            {
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.WriteLine("[CallAdminSystem] Database is disabled in configuration");
+                Console.ResetColor();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine($"[CallAdminSystem] Failed to initialize database: {ex.Message}");
+            Console.ResetColor();
+        }
     }
 
     private void InitializeServices()
     {
         _cooldownService = new CooldownService(Config);
         _discordService = new DiscordService(Config, Localizer);
-        _reportService = new ReportService(Config, _discordService, Localizer);
+        _databaseService = new DatabaseService(Config.Database);
+        _reportService = new ReportService(Config, _discordService, _databaseService, Localizer);
     }
 
     private void InitializeCommands()
