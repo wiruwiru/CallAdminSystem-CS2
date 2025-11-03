@@ -10,10 +10,11 @@ https://github.com/user-attachments/assets/fd49799b-bc89-4d4d-8b9a-627670620c80
 1. Install [CounterStrike Sharp](https://github.com/roflmuffin/CounterStrikeSharp) and [Metamod:Source](https://www.sourcemm.net/downloads.php/?branch=master)
 2. Download [CallAdminSystem.zip](https://github.com/wiruwiru/CallAdminSystem-CS2/releases) from the releases section.
 3. Install the [MenuManagerCS2](https://github.com/NickFox007/MenuManagerCS2) dependency (required).
-4. Unzip the archive and upload it to the game server
-5. Start the server and wait for the config.json file to be generated.
-6. Complete the configuration file with the parameters of your choice.
-7. Write possible reporting reasons in reasons.txt.
+4. (Optional) If you want to use the database feature, install [AnyBaseLibCS2](https://github.com/NickFox007/AnyBaseLibCS2) dependency.
+5. Unzip the archive and upload it to the game server
+6. Start the server and wait for the config.json file to be generated.
+7. Complete the configuration file with the parameters of your choice.
+8. Write possible reporting reasons in reasons.txt.
 
 # Config
 | Parameter | Description | Required     |
@@ -32,6 +33,20 @@ https://github.com/user-attachments/assets/fd49799b-bc89-4d4d-8b9a-627670620c80
 | `ReportEmbedColor` | Configure the color of the embed, you must set a hex color. Example: #eb4034 |**YES** |
 | `ClaimEmbedColor` | Configure the color of the embed, you must set a hex color. Example: #100c85 |**YES** |
 
+## Database Settings
+> [!NOTE]
+> The database feature requires [AnyBaseLibCS2](https://github.com/NickFox007/AnyBaseLibCS2) to be installed. If not installed, the plugin will work normally but without database functionality.
+
+| Parameter | Description | Required |
+| :------- | :------- | :------- |
+| `Enabled` | Enables or disables the database functionality. When disabled, no database operations will be performed. | **YES** |
+| `Host` | MySQL database host address. | **NO*** |
+| `Port` | MySQL database port (default: 3306). | **NO*** |
+| `User` | MySQL database username. | **NO*** |
+| `Password` | MySQL database password. | **NO*** |
+| `DatabaseName` | Name of the database to use. | **NO*** |
+**Required only if `Enabled` is set to `true`*
+
 ## Configuration example
 ```json
 {
@@ -49,17 +64,20 @@ https://github.com/user-attachments/assets/fd49799b-bc89-4d4d-8b9a-627670620c80
     "ClaimEmbedColor": "#100c85"
   },
   "CommandSettings": {
-    "ReportCommands": [
-      "css_call",
-      "css_report"
-    ],
-    "ClaimCommands": [
-      "css_claim"
-    ],
+    "ReportCommands": ["css_call", "css_report"],
+    "ClaimCommands": ["css_claim"],
     "CommandCooldownSeconds": 120
   },
   "PermissionSettings": {
     "ClaimCommandFlag": "@css/generic"
+  },
+  "Database": {
+    "Enabled": false,
+    "Host": "localhost",
+    "Port": 3306,
+    "User": "",
+    "Password": "",
+    "DatabaseName": ""
   },
   "ConfigVersion": 1
 }
