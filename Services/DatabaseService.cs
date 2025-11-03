@@ -1,6 +1,8 @@
-using MySqlConnector;
+using AnyBaseLib;
+using AnyBaseLib.Bases;
 
 using CallAdminSystem.Configs;
+using CallAdminSystem.Utils;
 using CallAdminSystem.Models;
 
 namespace CallAdminSystem.Services;
@@ -9,6 +11,8 @@ public class DatabaseService
 {
     private readonly DatabaseConfig _config;
     private readonly bool _enabled;
+    private IAnyBase? _db;
+    private bool _isInitialized = false;
 
     public DatabaseService(DatabaseConfig config)
     {
@@ -17,37 +21,59 @@ public class DatabaseService
 
         if (_enabled)
         {
-            LogInfo("DatabaseService initialized and enabled");
+            try
+            {
+                _db = CAnyBase.Base("mysql");
+                Logger.LogInfo("DatabaseService", "DatabaseService initialized and enabled");
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError("DatabaseService", $"Failed to load AnyBaseLib: {ex.Message}");
+                Logger.LogWarning("DatabaseService", "Database functionality will be disabled. Make sure AnyBaseLib.dll is present.");
+                _enabled = false;
+            }
         }
         else
         {
-            LogInfo("DatabaseService initialized but disabled in configuration");
+            Logger.LogInfo("DatabaseService", "DatabaseService initialized but disabled in configuration");
         }
     }
 
     public async Task InitializeDatabase()
     {
-        if (!_enabled)
+        if (!_enabled || _db == null)
         {
-            LogInfo("Database is disabled, skipping initialization");
+            Logger.LogInfo("DatabaseService", "Database is disabled, skipping initialization");
             return;
         }
 
         try
         {
-            using var connection = GetConnection();
-            await connection.OpenAsync();
-            await CreateTable(connection);
-            LogInfo("Database connection established and table created");
+            _db.Set(
+                CommitMode.AutoCommit,
+                _config.DatabaseName,
+                $"{_config.Host}:{_config.Port}",
+                _config.User,
+                _config.Password
+            );
+
+            if (!_db.Init())
+            {
+                throw new Exception("Failed to initialize database connection");
+            }
+
+            await Task.Run(CreateTable);
+            _isInitialized = true;
+            Logger.LogInfo("DatabaseService", "Database connection established and table created");
         }
         catch (Exception ex)
         {
-            LogError($"Failed to initialize database: {ex.Message}");
+            Logger.LogError("DatabaseService", $"Failed to initialize database: {ex.Message}");
             throw;
         }
     }
 
-    private async Task CreateTable(MySqlConnection connection)
+    private void CreateTable()
     {
         var createTableQuery = @"
             CREATE TABLE IF NOT EXISTS calladmin_reports (
@@ -65,229 +91,211 @@ public class DatabaseService
                 INDEX idx_reported_steamid (reported_steamid)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;";
 
-        using var cmd = new MySqlCommand(createTableQuery, connection);
-        await cmd.ExecuteNonQueryAsync();
-        LogInfo("Admin reports table created/verified");
+        _db?.Query(createTableQuery, new List<string>(), true);
+        Logger.LogInfo("DatabaseService", "Admin reports table created/verified");
     }
 
     public async Task<bool> SaveReport(ReportRecord record)
     {
-        if (!_enabled)
+        if (!_enabled || _db == null || !_isInitialized)
         {
             return false;
         }
 
         try
         {
-            using var connection = GetConnection();
-            await connection.OpenAsync();
-
             var insertQuery = @"
                 INSERT INTO calladmin_reports 
                 (uuid, server_address, victim_name, victim_steamid, reported_name, reported_steamid, reason, timestamp)
                 VALUES 
-                (@uuid, @server_address, @victim_name, @victim_steamid, @reported_name, @reported_steamid, @reason, @timestamp)";
+                ('{ARG}', '{ARG}', '{ARG}', '{ARG}', '{ARG}', '{ARG}', '{ARG}', '{ARG}')";
 
-            using var cmd = new MySqlCommand(insertQuery, connection);
-            cmd.Parameters.AddWithValue("@uuid", record.Uuid);
-            cmd.Parameters.AddWithValue("@server_address", record.ServerAddress);
-            cmd.Parameters.AddWithValue("@victim_name", record.VictimName);
-            cmd.Parameters.AddWithValue("@victim_steamid", record.VictimSteamId);
-            cmd.Parameters.AddWithValue("@reported_name", record.ReportedName);
-            cmd.Parameters.AddWithValue("@reported_steamid", record.ReportedSteamId);
-            cmd.Parameters.AddWithValue("@reason", record.Reason);
-            cmd.Parameters.AddWithValue("@timestamp", record.Timestamp);
+            var args = new List<string>
+            {
+                record.Uuid,
+                record.ServerAddress,
+                record.VictimName,
+                record.VictimSteamId,
+                record.ReportedName,
+                record.ReportedSteamId,
+                record.Reason,
+                record.Timestamp.ToString("yyyy-MM-dd HH:mm:ss")
+            };
 
-            await cmd.ExecuteNonQueryAsync();
-            LogInfo($"Report saved to database - UUID: {record.Uuid}");
+            await Task.Run(() => _db.Query(insertQuery, args, true));
+
+            Logger.LogInfo("DatabaseService", $"Report saved to database - UUID: {record.Uuid}");
             return true;
         }
         catch (Exception ex)
         {
-            LogError($"Error saving report to database: {ex.Message}");
+            Logger.LogError("DatabaseService", $"Error saving report to database: {ex.Message}");
             return false;
         }
     }
 
     public async Task<List<ReportRecord>> GetRecentReports(int limit = 10)
     {
-        if (!_enabled)
+        if (!_enabled || _db == null || !_isInitialized)
         {
             return new List<ReportRecord>();
         }
 
         try
         {
-            using var connection = GetConnection();
-            await connection.OpenAsync();
-
             var selectQuery = @"
                 SELECT uuid, server_address, victim_name, victim_steamid, reported_name, reported_steamid, reason, timestamp
                 FROM calladmin_reports
                 ORDER BY timestamp DESC
-                LIMIT @limit";
+                LIMIT {ARG}";
 
-            using var cmd = new MySqlCommand(selectQuery, connection);
-            cmd.Parameters.AddWithValue("@limit", limit);
+            var args = new List<string> { limit.ToString() };
 
             var records = new List<ReportRecord>();
-            using var reader = await cmd.ExecuteReaderAsync();
-
-            while (await reader.ReadAsync())
+            await Task.Run(() =>
             {
-                records.Add(new ReportRecord
+                var rows = _db.Query(selectQuery, args);
+                if (rows != null && rows.Count > 0)
                 {
-                    Uuid = reader.GetString("uuid"),
-                    ServerAddress = reader.GetString("server_address"),
-                    VictimName = reader.GetString("victim_name"),
-                    VictimSteamId = reader.GetString("victim_steamid"),
-                    ReportedName = reader.GetString("reported_name"),
-                    ReportedSteamId = reader.GetString("reported_steamid"),
-                    Reason = reader.GetString("reason"),
-                    Timestamp = reader.GetDateTime("timestamp")
-                });
-            }
+                    foreach (var row in rows)
+                    {
+                        records.Add(new ReportRecord
+                        {
+                            Uuid = row[0],
+                            ServerAddress = row[1],
+                            VictimName = row[2],
+                            VictimSteamId = row[3],
+                            ReportedName = row[4],
+                            ReportedSteamId = row[5],
+                            Reason = row[6],
+                            Timestamp = DateTime.Parse(row[7])
+                        });
+                    }
+                }
+            });
 
             return records;
         }
         catch (Exception ex)
         {
-            LogError($"Error retrieving reports from database: {ex.Message}");
+            Logger.LogError("DatabaseService", $"Error retrieving reports from database: {ex.Message}");
             return new List<ReportRecord>();
         }
     }
 
     public async Task<int> GetReportCount()
     {
-        if (!_enabled)
+        if (!_enabled || _db == null || !_isInitialized)
         {
             return 0;
         }
 
         try
         {
-            using var connection = GetConnection();
-            await connection.OpenAsync();
-
             var countQuery = "SELECT COUNT(*) FROM calladmin_reports";
-            using var cmd = new MySqlCommand(countQuery, connection);
 
-            var result = await cmd.ExecuteScalarAsync();
-            return Convert.ToInt32(result);
+            int count = 0;
+            await Task.Run(() =>
+            {
+                var result = _db.Query(countQuery, new List<string>());
+                if (result != null && result.Count > 0 && result[0].Count > 0)
+                {
+                    count = int.Parse(result[0][0]);
+                }
+            });
+
+            return count;
         }
         catch (Exception ex)
         {
-            LogError($"Error getting report count: {ex.Message}");
+            Logger.LogError("DatabaseService", $"Error getting report count: {ex.Message}");
             return 0;
         }
     }
 
     public async Task<List<ReportRecord>> GetReportsByPlayer(string steamId, int limit = 10)
     {
-        if (!_enabled)
+        if (!_enabled || _db == null || !_isInitialized)
         {
             return new List<ReportRecord>();
         }
 
         try
         {
-            using var connection = GetConnection();
-            await connection.OpenAsync();
-
             var selectQuery = @"
                 SELECT uuid, server_address, victim_name, victim_steamid, reported_name, reported_steamid, reason, timestamp
                 FROM calladmin_reports
-                WHERE victim_steamid = @steamid OR reported_steamid = @steamid
+                WHERE victim_steamid = '{ARG}' OR reported_steamid = '{ARG}'
                 ORDER BY timestamp DESC
-                LIMIT @limit";
+                LIMIT {ARG}";
 
-            using var cmd = new MySqlCommand(selectQuery, connection);
-            cmd.Parameters.AddWithValue("@steamid", steamId);
-            cmd.Parameters.AddWithValue("@limit", limit);
+            var args = new List<string> { steamId, steamId, limit.ToString() };
 
             var records = new List<ReportRecord>();
-            using var reader = await cmd.ExecuteReaderAsync();
-
-            while (await reader.ReadAsync())
+            await Task.Run(() =>
             {
-                records.Add(new ReportRecord
+                var rows = _db.Query(selectQuery, args);
+                if (rows != null && rows.Count > 0)
                 {
-                    Uuid = reader.GetString("uuid"),
-                    ServerAddress = reader.GetString("server_address"),
-                    VictimName = reader.GetString("victim_name"),
-                    VictimSteamId = reader.GetString("victim_steamid"),
-                    ReportedName = reader.GetString("reported_name"),
-                    ReportedSteamId = reader.GetString("reported_steamid"),
-                    Reason = reader.GetString("reason"),
-                    Timestamp = reader.GetDateTime("timestamp")
-                });
-            }
+                    foreach (var row in rows)
+                    {
+                        records.Add(new ReportRecord
+                        {
+                            Uuid = row[0],
+                            ServerAddress = row[1],
+                            VictimName = row[2],
+                            VictimSteamId = row[3],
+                            ReportedName = row[4],
+                            ReportedSteamId = row[5],
+                            Reason = row[6],
+                            Timestamp = DateTime.Parse(row[7])
+                        });
+                    }
+                }
+            });
 
             return records;
         }
         catch (Exception ex)
         {
-            LogError($"Error retrieving player reports from database: {ex.Message}");
+            Logger.LogError("DatabaseService", $"Error retrieving player reports from database: {ex.Message}");
             return new List<ReportRecord>();
         }
     }
 
     public async Task<bool> TestConnection()
     {
-        if (!_enabled)
+        if (!_enabled || _db == null)
         {
-            LogInfo("Database is disabled, skipping connection test");
+            Logger.LogInfo("DatabaseService", "Database is disabled, skipping connection test");
             return false;
         }
 
         try
         {
-            using var connection = GetConnection();
-            await connection.OpenAsync();
-            LogInfo("Database connection test successful");
+            await Task.Run(() => _db.Query("SELECT 1", new List<string>()));
+            Logger.LogInfo("DatabaseService", "Database connection test successful");
             return true;
         }
         catch (Exception ex)
         {
-            LogError($"Database connection test failed: {ex.Message}");
+            Logger.LogError("DatabaseService", $"Database connection test failed: {ex.Message}");
             return false;
         }
     }
 
-    private MySqlConnection GetConnection()
+    public bool IsEnabled() => _enabled && _db != null && _isInitialized;
+
+    public void Dispose()
     {
-        if (_config == null)
+        try
         {
-            throw new InvalidOperationException("Database configuration is null");
+            _db?.Close();
+            Logger.LogInfo("DatabaseService", "Database connection closed");
         }
-
-        var builder = new MySqlConnectionStringBuilder
+        catch (Exception ex)
         {
-            Server = _config.Host,
-            Port = _config.Port,
-            UserID = _config.User,
-            Database = _config.DatabaseName,
-            Password = _config.Password,
-            Pooling = true,
-            SslMode = MySqlSslMode.Preferred
-        };
-
-        return new MySqlConnection(builder.ConnectionString);
+            Logger.LogError("DatabaseService", $"Error closing database connection: {ex.Message}");
+        }
     }
-
-    private void LogInfo(string message)
-    {
-        Console.ForegroundColor = ConsoleColor.Cyan;
-        Console.WriteLine($"[CallAdminSystem Database] {message}");
-        Console.ResetColor();
-    }
-
-    private void LogError(string message)
-    {
-        Console.ForegroundColor = ConsoleColor.Red;
-        Console.WriteLine($"[CallAdminSystem Database] {message}");
-        Console.ResetColor();
-    }
-
-    public bool IsEnabled() => _enabled;
 }
