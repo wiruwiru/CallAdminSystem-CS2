@@ -15,7 +15,7 @@ namespace CallAdminSystem;
 public class CallAdminSystem : BasePlugin, IPluginConfig<BaseConfigs>
 {
     public override string ModuleAuthor => "luca.uy";
-    public override string ModuleVersion => "2.1.0";
+    public override string ModuleVersion => "2.1.1";
     public override string ModuleName => "CallAdminSystem";
     public override string ModuleDescription => "Allows players to report users with Discord integration and MySQL database";
 
