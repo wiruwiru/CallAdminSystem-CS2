@@ -1,19 +1,16 @@
 # CallAdminSystem CS2
 Allows players to report another user who is breaking the community rules, this report is sent as an embed message to Discord so that administrators can respond.
 
-> [!IMPORTANT]
-> From version **2.0.0 or higher**, the plugin requires the [MenuManagerCS2](https://github.com/NickFox007/MenuManagerCS2) dependency.
 
 https://github.com/user-attachments/assets/fd49799b-bc89-4d4d-8b9a-627670620c80
 
 ## Installation
 1. Install [CounterStrike Sharp](https://github.com/roflmuffin/CounterStrikeSharp) and [Metamod:Source](https://www.sourcemm.net/downloads.php/?branch=master)
 2. Download [CallAdminSystem.zip](https://github.com/wiruwiru/CallAdminSystem-CS2/releases) from the releases section.
-3. Install the [MenuManagerCS2](https://github.com/NickFox007/MenuManagerCS2) dependency (required).
-4. Unzip the archive and upload it to the game server
-5. Start the server and wait for the config.json file to be generated.
-6. Complete the configuration file with the parameters of your choice.
-7. Write possible reporting reasons in reasons.txt.
+3. Unzip the archive and upload it to the game server
+4. Start the server and wait for the config.json file to be generated.
+5. Complete the configuration file with the parameters of your choice.
+6. Write possible reporting reasons in reasons.txt.
 
 # Config
 | Parameter | Description | Required     |

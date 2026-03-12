@@ -1,9 +1,9 @@
 using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
-using CounterStrikeSharp.API.Modules.Commands;
+using CounterStrikeSharp.API.Modules.Menu;
 using CounterStrikeSharp.API.Modules.Utils;
+using CounterStrikeSharp.API.Modules.Commands;
 using Microsoft.Extensions.Localization;
-using MenuManager;
 
 using CallAdminSystem.Configs;
 using CallAdminSystem.Services;
@@ -19,8 +19,6 @@ public class ReportCommands
     private readonly PersonTargetData?[] _selectedReason;
     private readonly IStringLocalizer _localizer;
 
-    private IMenuApi? _menuApi;
-
     public ReportCommands(BaseConfigs config, CooldownService cooldownService, ReportService reportService, PersonTargetData?[] selectedReason, IStringLocalizer localizer)
     {
         _config = config;
@@ -30,19 +28,9 @@ public class ReportCommands
         _localizer = localizer;
     }
 
-    public void SetMenuApi(IMenuApi? menuApi)
-    {
-        _menuApi = menuApi;
-    }
-
     public void HandleReportCommand(CCSPlayerController? controller, CommandInfo commandInfo)
     {
         if (controller == null || !controller.IsValid) return;
-
-        if (_menuApi == null)
-        {
-            return;
-        }
 
         var players = Utilities.GetPlayers().Where(x => !x.IsBot && x.Connected == PlayerConnectedState.PlayerConnected).ToList();
         if (players.Count < _config.Server.MinimumPlayers)
@@ -65,9 +53,7 @@ public class ReportCommands
 
     private void ShowPlayerSelectionMenu(CCSPlayerController controller, List<CCSPlayerController> players)
     {
-        if (_menuApi == null) return;
-
-        var playerMenu = _menuApi.GetMenu(_localizer["SelectPlayerToReport"]);
+        var playerMenu = new ChatMenu(_localizer["SelectPlayerToReport"]);
         foreach (var player in players)
         {
             if (player == controller || player.Team == CsTeam.None) continue;
@@ -81,14 +67,12 @@ public class ReportCommands
             });
         }
 
-        playerMenu.Open(controller);
+        MenuManager.OpenChatMenu(controller, playerMenu);
     }
 
     private void ShowReasonSelectionMenu(CCSPlayerController controller, int targetIndex)
     {
-        if (_menuApi == null) return;
-
-        var reasonMenu = _menuApi.GetMenu(_localizer["SelectReasonToReport"]);
+        var reasonMenu = new ChatMenu(_localizer["SelectReasonToReport"]);
         reasonMenu.AddMenuOption(_localizer["CustomReason"], (p, option) =>
         {
             HandleCustomReason(p, targetIndex);
@@ -109,7 +93,7 @@ public class ReportCommands
             ShowPlayerSelectionMenu(p, players);
         });
 
-        reasonMenu.Open(controller);
+        MenuManager.OpenChatMenu(controller, reasonMenu);
     }
 
     private void HandleCustomReason(CCSPlayerController controller, int targetIndex)
@@ -122,8 +106,6 @@ public class ReportCommands
         };
 
         controller.PrintToChat($"{_localizer["Prefix"]} {_localizer["WriteReason"]}");
-
-        _menuApi?.CloseMenu(controller);
 
         SetCustomReasonTimeout(controller);
     }
@@ -139,18 +121,13 @@ public class ReportCommands
 
         _reportService.SendReport(controller, target, reason);
 
-        _menuApi?.CloseMenu(controller);
-
         controller.PrintToChat($"{_localizer["Prefix"]} {_localizer["SendReport", CleanPlayerName(target.PlayerName)]}");
     }
 
     public HookResult HandlePlayerSay(CCSPlayerController player, CommandInfo commandinfo)
     {
         var playerIndex = (int)player.Index;
-
-        if (_selectedReason[playerIndex] == null ||
-            !_selectedReason[playerIndex]!.IsSelectedReason ||
-            !_selectedReason[playerIndex]!.CustomReason)
+        if (_selectedReason[playerIndex] == null || !_selectedReason[playerIndex]!.IsSelectedReason || !_selectedReason[playerIndex]!.CustomReason)
         {
             return HookResult.Continue;
         }

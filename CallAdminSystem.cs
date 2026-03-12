@@ -1,10 +1,8 @@
 using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
-using CounterStrikeSharp.API.Core.Attributes;
-using CounterStrikeSharp.API.Core.Capabilities;
-using CounterStrikeSharp.API.Modules.Commands;
 using CounterStrikeSharp.API.Modules.Cvars;
-using MenuManager;
+using CounterStrikeSharp.API.Core.Attributes;
+using CounterStrikeSharp.API.Modules.Commands;
 
 using CallAdminSystem.Configs;
 using CallAdminSystem.Commands;
@@ -13,19 +11,15 @@ using CallAdminSystem.Models;
 
 namespace CallAdminSystem;
 
-[MinimumApiVersion(342)]
+[MinimumApiVersion(363)]
 public class CallAdminSystem : BasePlugin, IPluginConfig<BaseConfigs>
 {
     public override string ModuleAuthor => "luca.uy";
     public override string ModuleVersion => "2.1.0";
     public override string ModuleName => "CallAdminSystem";
-    public override string ModuleDescription => "Allows players to report users with Discord integration, MenuManager support and MySQL database";
+    public override string ModuleDescription => "Allows players to report users with Discord integration and MySQL database";
 
     public required BaseConfigs Config { get; set; }
-
-    // MenuManager capability
-    private IMenuApi? _menuApi;
-    private readonly PluginCapability<IMenuApi?> _menuCapability = new("menu:nfcore");
 
     // Services
     private CooldownService? _cooldownService;
@@ -51,42 +45,6 @@ public class CallAdminSystem : BasePlugin, IPluginConfig<BaseConfigs>
         CreateReasonsFileIfNotExists();
 
         _ = InitializeDatabaseAsync();
-    }
-
-    public override void OnAllPluginsLoaded(bool hotReload)
-    {
-        _menuApi = _menuCapability.Get();
-
-        if (_menuApi == null)
-        {
-            Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine("[CallAdminSystem] CRITICAL ERROR: MenuManager API not found!");
-            Console.WriteLine("[CallAdminSystem] MenuManager is a required dependency for this plugin to function.");
-            Console.WriteLine("[CallAdminSystem] Please install MenuManagerCS2 from: https://github.com/NickFox007/MenuManagerCS2");
-            Console.WriteLine("[CallAdminSystem] Plugin will now unload automatically.");
-            Console.ResetColor();
-
-            Server.NextFrame(() =>
-            {
-                try
-                {
-                    Server.ExecuteCommand($"css_plugins unload {ModuleName}");
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"[CallAdminSystem] Error during auto-unload: {ex.Message}");
-                }
-            });
-
-            return;
-        }
-        else
-        {
-            if (_reportCommands != null)
-            {
-                _reportCommands.SetMenuApi(_menuApi);
-            }
-        }
     }
 
     public void OnConfigParsed(BaseConfigs config)
@@ -207,15 +165,6 @@ public class CallAdminSystem : BasePlugin, IPluginConfig<BaseConfigs>
 
     public override void Unload(bool hotReload)
     {
-        if (_menuApi != null)
-        {
-            foreach (var player in Utilities.GetPlayers().Where(p => p.IsValid))
-            {
-                _menuApi.CloseMenu(player);
-            }
-        }
-
-        _menuApi = null;
         _cooldownService?.Dispose();
         _reportService?.Dispose();
         _discordService?.Dispose();
