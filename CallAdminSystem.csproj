@@ -6,6 +6,9 @@
         <Nullable>enable</Nullable>
         <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
         <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+        <OutputPath>bin\Release\CallAdminSystem\</OutputPath>
+        <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+        <DebugType>none</DebugType>
     </PropertyGroup>
     
     <ItemGroup>
