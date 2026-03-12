@@ -18,6 +18,7 @@
 
     <ItemGroup>
       <None Update="lang\**\*.*" CopyToOutputDirectory="PreserveNewest" />
+      <None Update="MySqlConnector.dll" CopyToOutputDirectory="PreserveNewest" />
     </ItemGroup>
 
 </Project>
