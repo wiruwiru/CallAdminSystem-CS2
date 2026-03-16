@@ -145,9 +145,12 @@ public class ReportService : IDisposable
         {
             if (_config.Server.GetIPandPORTautomatic)
             {
-                string? ip = ConVar.Find("ip")?.StringValue;
-                string? port = ConVar.Find("hostport")?.GetPrimitiveValue<int>().ToString();
-                _cachedServerInfo = !string.IsNullOrEmpty(ip) && !string.IsNullOrEmpty(port) ? $"{ip}:{port}" : _config.Server.IPandPORT;
+                Server.NextWorldUpdate(() =>
+                {
+                    string? ip = ConVar.Find("ip")?.StringValue;
+                    string? port = ConVar.Find("hostport")?.GetPrimitiveValue<int>().ToString();
+                    _cachedServerInfo = !string.IsNullOrEmpty(ip) && !string.IsNullOrEmpty(port) ? $"{ip}:{port}" : _config.Server.IPandPORT;
+                });
             }
             else
             {

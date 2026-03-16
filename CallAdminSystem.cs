@@ -135,9 +135,12 @@ public class CallAdminSystem : BasePlugin, IPluginConfig<BaseConfigs>
     {
         if (Config.Server.GetIPandPORTautomatic)
         {
-            string? ip = ConVar.Find("ip")?.StringValue;
-            string? port = ConVar.Find("hostport")?.GetPrimitiveValue<int>().ToString();
-            _cachedIPandPort = !string.IsNullOrEmpty(ip) && !string.IsNullOrEmpty(port) ? $"{ip}:{port}" : Config.Server.IPandPORT;
+            Server.NextWorldUpdate(() =>
+            {
+                string? ip = ConVar.Find("ip")?.StringValue;
+                string? port = ConVar.Find("hostport")?.GetPrimitiveValue<int>().ToString();
+                _cachedIPandPort = !string.IsNullOrEmpty(ip) && !string.IsNullOrEmpty(port) ? $"{ip}:{port}" : Config.Server.IPandPORT;
+            });
         }
         else
         {
