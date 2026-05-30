@@ -44,7 +44,7 @@ public class ReportCommands
             return;
         }
 
-        var players = Utilities.GetPlayers().Where(x => !x.IsBot && x.Connected == PlayerConnectedState.PlayerConnected).ToList();
+        var players = Utilities.GetPlayers().Where(x => !x.IsBot && x.Connected == PlayerConnectedState.Connected).ToList();
         if (players.Count < _config.Server.MinimumPlayers)
         {
             controller.PrintToChat($"{_localizer["Prefix"]} {_localizer["InsufficientPlayers"]}");
@@ -105,7 +105,7 @@ public class ReportCommands
 
         reasonMenu.AddMenuOption("← " + _localizer["Back"], (p, option) =>
         {
-            var players = Utilities.GetPlayers().Where(x => !x.IsBot && x.Connected == PlayerConnectedState.PlayerConnected).ToList();
+            var players = Utilities.GetPlayers().Where(x => !x.IsBot && x.Connected == PlayerConnectedState.Connected).ToList();
             ShowPlayerSelectionMenu(p, players);
         });
 

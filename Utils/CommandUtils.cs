@@ -20,7 +20,7 @@ public static class CommandUtils
         return player != null &&
                player.IsValid &&
                !player.IsBot &&
-               player.Connected == PlayerConnectedState.PlayerConnected;
+               player.Connected == PlayerConnectedState.Connected;
     }
 
     public static string CleanPlayerName(string playerName)

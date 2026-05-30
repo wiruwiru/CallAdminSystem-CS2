@@ -14,61 +14,29 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - uses: actions/checkout@v4
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 8.0.x
-
-      - name: Checkout current ref
-        if: github.event_name != 'release'
-        uses: actions/checkout@v4
+          dotnet-version: 10.0.x
       
       - name: Restore dependencies
-        if: github.event_name != 'release'
         run: dotnet restore
       
       - name: Build
-        if: github.event_name != 'release'
         run: dotnet build CallAdminSystem.csproj -c Release -o ./CallAdminSystem
 
-      - name: Checkout main branch
-        if: github.event_name == 'release'
-        uses: actions/checkout@v4
-        with:
-          ref: main
-          path: src-main
-
-      - name: Checkout without-menu branch
-        if: github.event_name == 'release'
-        uses: actions/checkout@v4
-        with:
-          ref: without-menu
-          path: src-without-menu
-
-      - name: Build main version
+      - name: Create release asset
         if: github.event_name == 'release'
         run: |
-          cd src-main
-          dotnet restore
-          dotnet build CallAdminSystem.csproj -c Release -o ../CallAdminSystem
-          cd ..
           zip -r CallAdminSystem-${{ github.event.release.tag_name }}.zip ./CallAdminSystem
 
-      - name: Build without-menu version
-        if: github.event_name == 'release'
-        run: |
-          cd src-without-menu
-          dotnet restore
-          dotnet build CallAdminSystem.csproj -c Release -o ../CallAdminSystem-NoMenu
-          cd ..
-          zip -r CallAdminSystem-NoMenu-${{ github.event.release.tag_name }}.zip ./CallAdminSystem-NoMenu
-
-      - name: Upload release assets
+      - name: Upload release asset
         if: github.event_name == 'release'
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            CallAdminSystem-${{ github.event.release.tag_name }}.zip
-            CallAdminSystem-NoMenu-${{ github.event.release.tag_name }}.zip
+            ./CallAdminSystem-${{ github.event.release.tag_name }}.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

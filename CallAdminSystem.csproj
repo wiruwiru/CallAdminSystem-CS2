@@ -1,25 +1,27 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+    <OutputPath>bin\Release\CallAdminSystem\</OutputPath>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <DebugType>none</DebugType>
+  </PropertyGroup>
 
-    <PropertyGroup>
-        <TargetFramework>net8.0</TargetFramework>
-        <ImplicitUsings>enable</ImplicitUsings>
-        <Nullable>enable</Nullable>
-        <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-        <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
-        <OutputPath>bin\Release\CallAdminSystem\</OutputPath>
-        <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
-        <DebugType>none</DebugType>
-    </PropertyGroup>
-    
-    <ItemGroup>
-      <PackageReference Include="CounterStrikeSharp.API" Version="1.0.363" />
-      <PackageReference Include="MysqlConnector" Version="2.4.0" />
-      <Reference Include="MenuManagerApi"><HintPath>MenuManagerApi.dll</HintPath></Reference>
-    </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="CounterStrikeSharp.API" Version="1.0.369" />
+    <PackageReference Include="MysqlConnector" Version="2.5.0" />
+    <Reference Include="MenuManagerApi"><HintPath>MenuManagerApi.dll</HintPath></Reference>
+  </ItemGroup>
 
-    <ItemGroup>
-      <None Update="lang\**\*.*" CopyToOutputDirectory="PreserveNewest" />
-      <None Update="MySqlConnector.dll" CopyToOutputDirectory="PreserveNewest" />
-    </ItemGroup>
+  <Target Name="CopyMySqlConnector" AfterTargets="Build">
+    <Copy SourceFiles="@(RuntimeCopyLocalItems->WithMetadataValue('NuGetPackageId', 'MySqlConnector'))" DestinationFolder="$(OutputPath)" />
+  </Target>
+
+  <ItemGroup>
+    <None Update="lang\**\*.*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 
 </Project>
