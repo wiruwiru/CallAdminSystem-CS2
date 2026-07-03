@@ -44,7 +44,9 @@ https://github.com/user-attachments/assets/fd49799b-bc89-4d4d-8b9a-627670620c80
   },
   "DiscordSettings": {
     "WebhookUrl": "https://discord.com/api/webhooks/xxxxx/xxxxxxxxx",
-    "MentionRoleID": "1111767358881681519",
+    "MentionRoleID": [
+      "1111767358881681519"
+    ],
     "ReportEmbedColor": "#eb4034",
     "ClaimEmbedColor": "#100c85"
   },

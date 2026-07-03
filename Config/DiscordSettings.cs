@@ -8,7 +8,7 @@ public class DiscordSettings
     public string WebhookUrl { get; set; } = "";
 
     [JsonPropertyName("MentionRoleID")]
-    public string MentionRoleID { get; set; } = "";
+    public List<string> MentionRoleID { get; set; } = [];
 
     [JsonPropertyName("ReportEmbedColor")]
     public string ReportEmbedColor { get; set; } = "#eb4034";

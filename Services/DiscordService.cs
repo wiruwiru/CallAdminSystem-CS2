@@ -37,9 +37,9 @@ public class DiscordService : IDisposable
             var customDomain = GetCustomDomain();
 
             string? mentionMessage = null;
-            if (!string.IsNullOrEmpty(_config.Discord.MentionRoleID))
+            if (_config.Discord.MentionRoleID.Count > 0)
             {
-                string mentionRoleIDMessage = $"<@&{_config.Discord.MentionRoleID}>";
+                string mentionRoleIDMessage = string.Join(", ", _config.Discord.MentionRoleID.Select(id => $"<@&{id}>"));
                 mentionMessage = _localizer["DiscordMention", mentionRoleIDMessage].Value;
             }
 
