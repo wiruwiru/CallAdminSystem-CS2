@@ -13,11 +13,11 @@ using CallAdminSystem.Models;
 
 namespace CallAdminSystem;
 
-[MinimumApiVersion(363)]
+[MinimumApiVersion(369)]
 public class CallAdminSystem : BasePlugin, IPluginConfig<BaseConfigs>
 {
     public override string ModuleAuthor => "luca.uy";
-    public override string ModuleVersion => "2.1.2";
+    public override string ModuleVersion => "2.1.3";
     public override string ModuleName => "CallAdminSystem";
     public override string ModuleDescription => "Allows players to report users with Discord integration, MenuManager support and MySQL database";
 
