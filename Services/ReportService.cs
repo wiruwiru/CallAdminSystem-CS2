@@ -157,7 +157,17 @@ public class ReportService : IDisposable
                 _cachedServerInfo = _config.Server.IPandPORT;
             }
 
-            _cachedHostname = _config.Server.UseHostname ? (ConVar.Find("hostname")?.StringValue ?? _localizer["NewReport"]) : _localizer["NewReport"];
+            if (_config.Server.UseHostname)
+            {
+                Server.NextWorldUpdate(() =>
+                {
+                    _cachedHostname = ConVar.Find("hostname")?.StringValue ?? _localizer["NewReport"];
+                });
+            }
+            else
+            {
+                _cachedHostname = _localizer["NewReport"];
+            }
         }
         catch (Exception ex)
         {

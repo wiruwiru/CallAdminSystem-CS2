@@ -189,7 +189,17 @@ public class CallAdminSystem : BasePlugin, IPluginConfig<BaseConfigs>
             _cachedIPandPort = Config.Server.IPandPORT;
         }
 
-        _hostname = Config.Server.UseHostname ? (ConVar.Find("hostname")?.StringValue ?? Localizer["NewReport"]) : Localizer["NewReport"];
+        if (Config.Server.UseHostname)
+        {
+            Server.NextWorldUpdate(() =>
+            {
+                _hostname = ConVar.Find("hostname")?.StringValue ?? Localizer["NewReport"];
+            });
+        }
+        else
+        {
+            _hostname = Localizer["NewReport"];
+        }
     }
 
     private void CreateReasonsFileIfNotExists()
